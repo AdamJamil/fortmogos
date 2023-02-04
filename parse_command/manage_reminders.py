@@ -29,5 +29,5 @@ async def manage_reminders(msg: discord.message.Message, data: PersistentInfo) -
             await msg.reply("Hey <@{msg.author.id}>, you're an idiot :D")
         else:
             data.alerts.remove(reminders[idx])
-            await msg.reply("Hey <@{msg.author.id}>, your alert was deleted.")
+            await msg.reply(f"Hey <@{msg.author.id}>, your alert was deleted.")
         await msg.delete()

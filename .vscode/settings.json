@@ -1,0 +1,9 @@
+{
+    "python.linting.enabled": true,
+    "python.linting.pylintEnabled": false,
+    "python.linting.pylintArgs": [
+        "--init-hook",
+        "import sys; sys.path.insert(0, './core'); sys.path.insert(0, './parse_command')"
+    ],
+    "python.linting.flake8Enabled": true
+}

@@ -2,7 +2,6 @@ from typing import List
 import discord
 from core.alert import Alert
 from core.data import PersistentInfo
-
 from core.utils import get_day_to_reminders, list_reminders
 
 

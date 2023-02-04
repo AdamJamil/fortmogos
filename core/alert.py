@@ -30,11 +30,20 @@ class Alert:
         return False
 
     def should_activate(self, curr_time: dt) -> bool:
+        """
+        Returns true if alert hasn't been set off too recently and we're within 5
+        minutes of last activation.
+        """
         return curr_time - self._last_activated >= timedelta(
             hours=12
         ) and self.five_m_past_activation(curr_time)
 
     async def activate(self) -> None:
+        """
+        Just sends whatever message it's meant to send. Can be overridden by subclass
+        e.g. for tasks we want to schedule for ourselves. May need to be refactored if
+        we want to group alert messages together.
+        """
         await self.client.get_partial_messageable(
             self.channel_id,
         ).send(self._reminder_str.format(user=self.user, msg=self.msg, x=now()))

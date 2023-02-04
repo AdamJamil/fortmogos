@@ -55,6 +55,7 @@ def shutdown() -> None:
         loop.run_until_complete(
             asyncio.gather(*(channel.send("zzz") for channel in alert_channels))
         )
+    print("Saved data.")
 
 
 @client.event
@@ -81,5 +82,10 @@ async def on_message(msg: "Message"):
         await manage_reminders(msg, data)
 
 
-loop = asyncio.get_event_loop()
-loop.run_until_complete(asyncio.gather(client.start(TOKEN), timer.run()))
+try:
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(asyncio.gather(client.start(TOKEN), timer.run()))
+except (Exception, KeyboardInterrupt) as e:
+    print(f"Caught {type(e)}, shutting down..")
+    print(e)
+    exit(1)

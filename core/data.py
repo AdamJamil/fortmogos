@@ -25,4 +25,5 @@ class PersistentInfo:
         delattr(self, "alert_channels")
         with open("data", "wb") as f:
             pickle.dump(self, f)
+        self.alert_channels = shit
         return shit

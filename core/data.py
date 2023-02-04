@@ -7,7 +7,7 @@ import discord
 
 class PersistentInfo:
     def __init__(self, client: discord.Client) -> None:
-        from alert import Alert
+        from core.alert import Alert
 
         self.tasks: List[Alert] = []
         self.alert_channels: List[discord.abc.MessageableChannel] = []
@@ -19,7 +19,7 @@ class PersistentInfo:
                     *map(client.get_partial_messageable, self.alert_channels_ids)
                 ]
 
-    def save(self) -> List[discord.abc.MessageableChannel]:
+    def save(self) -> List["discord.abc.MessageableChannel"]:
         self.alert_channels_ids = [channel.id for channel in self.alert_channels]
         shit = self.alert_channels
         delattr(self, "alert_channels")

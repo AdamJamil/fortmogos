@@ -1,6 +1,7 @@
 from collections import defaultdict
 from datetime import datetime as dt, time as Time, timedelta
 from typing import (
+    TYPE_CHECKING,
     DefaultDict,
     Dict,
     List,
@@ -10,10 +11,11 @@ from typing import (
     Union,
 )
 from dateutil.relativedelta import relativedelta
-from core.alert import Alert
 from core.data import PersistentInfo
-
 from core.timer import now
+
+if TYPE_CHECKING:
+    from core.alert import Alert
 
 
 def parse_duration(duration_string: str, curr_time: dt) -> Union[dt, str]:
@@ -178,7 +180,9 @@ def get_day_to_reminders(
     data: PersistentInfo,
 ) -> DefaultDict[dt, List[Tuple[dt, "Alert"]]]:
     curr_time = now()
-    day_to_reminders: DefaultDict[dt, List[Tuple[dt, Alert]]] = defaultdict(lambda: [])
+    day_to_reminders: DefaultDict[dt, List[Tuple[dt, "Alert"]]] = defaultdict(
+        lambda: []
+    )
     for reminder in data.tasks:
         reminder_day = replace_down(
             reminder_dt := reminder.get_next_activation(curr_time), 3, zero=True

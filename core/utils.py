@@ -183,7 +183,7 @@ def get_day_to_reminders(
     day_to_reminders: DefaultDict[dt, List[Tuple[dt, "Alert"]]] = defaultdict(
         lambda: []
     )
-    for reminder in data.tasks:
+    for reminder in data.alerts:
         reminder_day = replace_down(
             reminder_dt := reminder.get_next_activation(curr_time), 3, zero=True
         )

@@ -9,7 +9,7 @@ class PersistentInfo:
     def __init__(self, client: discord.Client) -> None:
         from core.alert import Alert
 
-        self.tasks: List[Alert] = []
+        self.alerts: List[Alert] = []
         self.alert_channels: List[discord.abc.MessageableChannel] = []
 
         if os.path.exists("data"):

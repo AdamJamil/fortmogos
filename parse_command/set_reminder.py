@@ -18,7 +18,7 @@ async def set_reminder(
                 f"Your command `{msg.content}` failed: {reminder_time}"
             )
         else:
-            data.tasks.append(
+            data.alerts.append(
                 DailyAlert(
                     reminder_str, msg.author.id, msg.channel.id, client, reminder_time
                 )
@@ -38,7 +38,7 @@ async def set_reminder(
                 f"Your command `{msg.content}` failed: {reminder_time}"
             )
         else:
-            data.tasks.append(
+            data.alerts.append(
                 SingleAlert(
                     reminder_str, msg.author.id, msg.channel.id, client, reminder_time
                 )

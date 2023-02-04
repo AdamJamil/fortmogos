@@ -23,21 +23,17 @@ class Timer:
     async def run(self):
         if self.data.alert_channels:
             await asyncio.gather(
-                *(
-                    channel.send("nyooooom") for channel in self.data.alert_channels
-                )
+                *(channel.send("nyooooom") for channel in self.data.alert_channels)
             )
         while 1:
             print(f"It's currently {' '.join(str(now()).split(' ')[1:])}")
             if TYPE_CHECKING:
                 from alert import Alert
-            new_tasks: List[Alert] = []
-            for task in self.data.tasks:
+            new_alerts: List[Alert] = []
+            for task in self.data.alerts:
                 if not await task.maybe_activate(self.timer) or task.repeats:
-                    new_tasks.append(task)
-            self.data.tasks = new_tasks
+                    new_alerts.append(task)
+            self.data.alerts = new_alerts
 
-            await asyncio.sleep(
-                max(0, 0.01 - (now() - self.timer).total_seconds())
-            )
+            await asyncio.sleep(max(0, 0.01 - (now() - self.timer).total_seconds()))
             self.timer = now()

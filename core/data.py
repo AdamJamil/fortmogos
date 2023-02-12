@@ -7,9 +7,9 @@ import discord
 
 class PersistentInfo:
     def __init__(self, client: discord.Client) -> None:
-        from core.alert import Alert
+        from core.task import Task
 
-        self.alerts: List[Alert] = []
+        self.tasks: List[Task] = []
         self.alert_channels: List[discord.abc.MessageableChannel] = []
 
         if os.path.exists("data"):
@@ -19,11 +19,8 @@ class PersistentInfo:
                     *map(client.get_partial_messageable, self.alert_channels_ids)
                 ]
 
-    def save(self) -> List["discord.abc.MessageableChannel"]:
+    def save(self) -> None:
         self.alert_channels_ids = [channel.id for channel in self.alert_channels]
-        shit = self.alert_channels
         delattr(self, "alert_channels")
         with open("data", "wb") as f:
             pickle.dump(self, f)
-        self.alert_channels = shit
-        return shit

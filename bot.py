@@ -1,5 +1,6 @@
 import asyncio
 import atexit
+import traceback
 from typing import TYPE_CHECKING
 
 import discord
@@ -16,10 +17,11 @@ if TYPE_CHECKING:
 
 
 with open("token.txt", "r") as f:
-    TOKEN = f.read().strip()
+    TOKEN = f.read().strip().split("\n")[0]
 GUILD = "suspcious"
 
 client = discord.Client(intents=discord.Intents.all())
+loop = asyncio.get_event_loop()
 
 
 @client.event
@@ -51,11 +53,11 @@ def shutdown() -> None:
     This function is run when the bot shuts down.
     Subscribed channels are alerted and data is saved.
     """
-    if alert_channels := data.save():
+    if data.alert_channels:
         loop.run_until_complete(
-            asyncio.gather(*(channel.send("zzz") for channel in alert_channels))
+            asyncio.gather(*(channel.send("zzz") for channel in data.alert_channels))
         )
-    print("Saved data.")
+        print("Sent channel alerts.")
 
 
 @client.event
@@ -82,10 +84,21 @@ async def on_message(msg: "Message"):
         await manage_reminders(msg, data)
 
 
-try:
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(asyncio.gather(client.start(TOKEN), timer.run()))
-except (Exception, KeyboardInterrupt) as e:
-    print(f"Caught {type(e)}, shutting down..")
-    print(e)
+@client.event
+async def on_error(event, *args, **kwargs):
+    print(event)
     exit(1)
+
+
+def main():
+    try:
+        loop.run_until_complete(asyncio.gather(client.start(TOKEN), timer.run()))
+    except (Exception, KeyboardInterrupt) as e:
+        print(f"Caught {type(e)}, shutting down..")
+        print(e)
+        print(traceback.format_exc())
+        exit(1)
+
+
+if __name__ == "__main__":
+    main()

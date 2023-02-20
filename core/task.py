@@ -1,9 +1,7 @@
-""""""
-
 from datetime import datetime as dt, timedelta
 from math import ceil
 import discord
-from core.timer import now, speed_factor
+from core.timer import now
 from core.utils import time_dist
 from core.data import PersistentInfo
 
@@ -12,9 +10,10 @@ class Task:
     """Represents any event that should occur in the future, possibly multiple times."""
 
     def __init__(self) -> None:
-        print("open task")
-        self._activation_threshold = timedelta(seconds=30 * speed_factor)
-        print("close task")
+        self._activation_threshold = timedelta(
+            seconds=30 if now.speed_factor == 1 else 60 * 60
+        )
+        self.repeatable = False
 
     async def maybe_activate(self, curr_time: dt) -> bool:
         if activated := self.should_activate(curr_time):
@@ -51,6 +50,7 @@ class RepeatableTask(Task):
         super().__init__()
         self._repeat_activation_threshold = timedelta(seconds=30)
         self._last_activated = now() - timedelta(days=100)
+        self.repeatable = True
 
     async def maybe_activate(self, curr_time: dt) -> bool:
         if activated := await Task.maybe_activate(self, curr_time):
@@ -60,7 +60,7 @@ class RepeatableTask(Task):
     def should_activate(self, curr_time: dt) -> bool:
         return (
             self.soon_past_activation(curr_time)
-            and curr_time - self._last_activated <= self._repeat_activation_threshold
+            and curr_time - self._last_activated > self._repeat_activation_threshold
         )
 
 
@@ -81,7 +81,7 @@ class PeriodicTask(RepeatableTask):
             (curr_time - self.first_activation + timedelta(milliseconds=500))
             / self.periodicity
         )
-        return curr_time + repeats * self.periodicity
+        return self.first_activation + repeats * self.periodicity
 
     def soon_past_activation(self, curr_time: dt) -> bool:
         next_activation = self.get_next_activation(curr_time)
@@ -136,7 +136,6 @@ class Alert(Task):
         descriptor_tag: str = "",
     ) -> None:
         Task.__init__(self)
-        print("wtf")
         self.msg = msg
         self.user = user
         self.channel_id = channel_id
@@ -145,7 +144,6 @@ class Alert(Task):
         self._reminder_str: str = (
             "Hey <@{user}>, this is a reminder to {msg}. It's currently {x}"
         )
-        print("wtf")
 
     async def activate(self) -> None:
         """
@@ -169,11 +167,8 @@ class PeriodicAlert(Alert, PeriodicTask):
         first_activation: dt,
         descriptor_tag: str = "",
     ) -> None:
-        print("wtf")
         Alert.__init__(self, msg, user, channel_id, client, descriptor_tag)
-        print("wtf")
         PeriodicTask.__init__(self, periodicity, first_activation)
-        print("wtf")
 
 
 class SingleAlert(Alert, SingleTask):

@@ -1,25 +1,42 @@
 import asyncio
-from datetime import datetime as dt
-from typing import TYPE_CHECKING, List
+from datetime import datetime as dt, timedelta
+from typing import TYPE_CHECKING
+
 
 if TYPE_CHECKING:
     from core.data import PersistentInfo
 
 
-start = dt.now()
-speed_factor = 10000
+class Now:
+    def __init__(self) -> None:
+        self.start: dt = dt.now()
+        self.speed_factor: int = 1
+
+    def __call__(self, do_not_mock: bool = False) -> dt:
+        if do_not_mock or self.speed_factor == 1:
+            return dt.now()
+        return self.start + self.speed_factor * (dt.now() - self.start)
+
+    def suppose_it_is(self, new_time: dt) -> None:
+        # new_time = start + sf * (now - start)
+        #        = (1 - sf) * start + sf * now
+        # start  = (new_time - sf * now) / (1 - sf)
+        curr = dt.now()
+        curr_epoch = (curr - dt(1970, 1, 1)).total_seconds()
+        new_time_epoch = (new_time - dt(1970, 1, 1)).total_seconds()
+        start_epoch = (new_time_epoch - self.speed_factor * curr_epoch) / (
+            1 - self.speed_factor
+        )
+        self.start = dt(1970, 1, 1) + timedelta(seconds=start_epoch)
 
 
-def now(do_not_mock=False) -> dt:
-    if do_not_mock or speed_factor == 1:
-        return dt.now()
-    return start + speed_factor * (dt.now() - start)
+now = Now()
 
 
 class Timer:
-    def __init__(self, data):
+    def __init__(self, data: "PersistentInfo"):
         self.timer = now()
-        self.data: PersistentInfo = data
+        self.data = data
 
     async def run(self):
         if self.data.alert_channels:
@@ -27,19 +44,13 @@ class Timer:
                 *(channel.send("nyooooom") for channel in self.data.alert_channels)
             )
 
-        from core.task import RepeatableTask
-
         while 1:
-            print(f"It's currently {' '.join(str(now()).split(' ')[1:])}")
-            if TYPE_CHECKING:
-                from core.task import Task
-            new_tasks: List[Task] = []
-            for task in self.data.tasks:
-                if not await task.maybe_activate(self.timer) or isinstance(
-                    task, RepeatableTask
-                ):
-                    new_tasks.append(task)
-            self.data.tasks = new_tasks
+            # print(f"It's currently {' '.join(str(now()).split(' ')[1:])}")
+            self.data.tasks = [
+                task
+                for task in self.data.tasks
+                if not await task.maybe_activate(self.timer) or task.repeatable
+            ]
 
-            await asyncio.sleep(max(0, 0.1 - (now() - self.timer).total_seconds()))
+            await asyncio.sleep(max(0, 0.5 - (now() - self.timer).total_seconds()))
             self.timer = now()

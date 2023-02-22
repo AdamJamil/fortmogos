@@ -134,7 +134,7 @@ class Test:
         assert data.tasks[0].first_activation.hour == 8
         assert data.tasks[0].first_activation.minute == 0
 
-        now.suppose_it_is(now().replace(hour=7, minute=30))
+        now.suppose_it_is(now().replace(hour=7, minute=59, second=59))
 
         assert (
             alert := await next_msg(
@@ -145,7 +145,7 @@ class Test:
         assert alert.content.startswith(
             "Hey <@1074389982095089664>, this is a reminder to wake up."
         )
-        assert alert.content.split(". ")[1].split(" ")[3].startswith("08")
+        assert alert.content.split(". ")[1].split(" ")[3].startswith("08:00")
 
 
 async def start(test_channel: PartialMessageable):
@@ -156,8 +156,6 @@ async def start(test_channel: PartialMessageable):
 
 
 def main():
-    now.speed_factor = 600
-
     test_channel_id = 1063934130397659236
     test_channel = client.get_partial_messageable(test_channel_id)
 

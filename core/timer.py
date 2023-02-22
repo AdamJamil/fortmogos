@@ -9,25 +9,14 @@ if TYPE_CHECKING:
 
 class Now:
     def __init__(self) -> None:
-        self.start: dt = dt.now()
-        self.speed_factor: int = 1
+        self.offset: timedelta = timedelta()
 
     def __call__(self, do_not_mock: bool = False) -> dt:
-        if do_not_mock or self.speed_factor == 1:
-            return dt.now()
-        return self.start + self.speed_factor * (dt.now() - self.start)
+        return dt.now() + self.offset
 
     def suppose_it_is(self, new_time: dt) -> None:
-        # new_time = start + sf * (now - start)
-        #        = (1 - sf) * start + sf * now
-        # start  = (new_time - sf * now) / (1 - sf)
-        curr = dt.now()
-        curr_epoch = (curr - dt(1970, 1, 1)).total_seconds()
-        new_time_epoch = (new_time - dt(1970, 1, 1)).total_seconds()
-        start_epoch = (new_time_epoch - self.speed_factor * curr_epoch) / (
-            1 - self.speed_factor
-        )
-        self.start = dt(1970, 1, 1) + timedelta(seconds=start_epoch)
+        # new_time = now + offset
+        self.offset = new_time - dt.now()
 
 
 now = Now()
@@ -45,7 +34,7 @@ class Timer:
             )
 
         while 1:
-            # print(f"It's currently {' '.join(str(now()).split(' ')[1:])}")
+            print(f"It's currently {' '.join(str(now()).split(' ')[1:])}")
             self.data.tasks = [
                 task
                 for task in self.data.tasks

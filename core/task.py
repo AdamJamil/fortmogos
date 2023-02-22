@@ -11,7 +11,7 @@ class Task:
 
     def __init__(self) -> None:
         self._activation_threshold = timedelta(
-            seconds=30 if now.speed_factor == 1 else 60 * 60
+            seconds=30
         )
         self.repeatable = False
 

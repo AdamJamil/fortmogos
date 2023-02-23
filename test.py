@@ -11,6 +11,7 @@ from bot import start as start_bot, data
 from core.data import PersistentInfo
 from core.task import PeriodicAlert, SingleAlert
 from core.timer import now
+from core.utils import parse_duration
 from custom_typing.protocols import Color
 
 if TYPE_CHECKING:
@@ -207,6 +208,13 @@ class Test:
         _, response = await Test.query("help reminder", self.channel)
 
         assert len(response.content.split("\n")) >= 15
+
+    async def test_parse_duration(self) -> None:
+        ref = dt(year=2023, month=1, day=1)
+        assert parse_duration("8m", ref) == dt(year=2023, month=1, day=1, minute=8)
+        assert parse_duration("3d8m", ref) == dt(year=2023, month=1, day=4, minute=8)
+        assert parse_duration("4n", ref) == dt(year=2023, month=5, day=1)
+        assert parse_duration("2y4n", ref) == dt(year=2025, month=5, day=1)
 
 
 async def start(test_channel: PartialMessageable):

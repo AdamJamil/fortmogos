@@ -216,6 +216,16 @@ class Test:
         assert parse_duration("4n", ref) == dt(year=2023, month=5, day=1)
         assert parse_duration("2y4n", ref) == dt(year=2025, month=5, day=1)
 
+        assert (
+            parse_duration("23", ref) == "Couldn't find units for last time quantity "
+            "`23`. A valid duration is written with no spaces, and alternates between "
+            'numbers and units of time (e.g. "2d1h5s").'
+        )
+        assert (
+            parse_duration("23g", ref) == "Found character `g` which isn't a valid unit"
+            ' of time. The options are "y", "n" (month), "d", "h", "m", "s".'
+        )
+
 
 async def start(test_channel: PartialMessageable):
     try:

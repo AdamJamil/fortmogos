@@ -14,7 +14,7 @@ class PersistentInfo:
 
         if os.path.exists("data"):
             with open("data", "rb") as f:
-                self.__dict__ = pickle.load(f).__dict__
+                self.__dict__ = pickle.load(f)
                 self.alert_channels = [
                     *map(client.get_partial_messageable, self.alert_channels_ids)
                 ]
@@ -23,4 +23,4 @@ class PersistentInfo:
         self.alert_channels_ids = [channel.id for channel in self.alert_channels]
         delattr(self, "alert_channels")
         with open("data", "wb") as f:
-            pickle.dump(self, f)
+            pickle.dump(self.__dict__, f)

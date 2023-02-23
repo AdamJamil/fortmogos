@@ -2,11 +2,14 @@ from __future__ import annotations
 import asyncio
 import datetime
 import traceback
-from typing import TYPE_CHECKING, Any, Dict, Optional
+from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple
+from datetime import datetime as dt, timedelta
+from unittest.mock import MagicMock, patch
 
 import discord
 from bot import start as start_bot, data
-from core.task import PeriodicAlert
+from core.data import PersistentInfo
+from core.task import PeriodicAlert, SingleAlert
 from core.timer import now
 from custom_typing.protocols import Color
 
@@ -78,17 +81,38 @@ class Test:
     def __init__(self, channel: discord.PartialMessageable) -> None:
         self.channel = channel
 
-    async def run(self):
-        await asyncio.sleep(2)
-        while True:
-            await self.channel.send("With a hey, ho")
-            await asyncio.sleep(1)
-            if (
-                await self.channel.history(limit=1).__anext__()
-            ).content == ":notes: the wind and the rain :notes:":
-                break
+    @staticmethod
+    async def query(txt: str, channel: PartialMessageable) -> Tuple[Message, Message]:
+        query = await channel.send(txt)
 
-        green("Successfully linked bots.")
+        assert (
+            response := await next_msg(channel, 1061719682773688391, is_not=query)
+        ), "Timed out waiting for response."
+
+        return query, response
+
+    @staticmethod
+    def mock_data(pickle_load: MagicMock) -> None:
+        pickle_load.return_value = PersistentInfo.__new__(PersistentInfo)
+        pickle_load.return_value.tasks = []
+        pickle_load.return_value.alert_channels = []
+
+    @staticmethod
+    def reset_data() -> None:
+        data.tasks = []
+        data.alert_channels = []
+
+    @patch("core.data.pickle.load")
+    async def run(self, pickle_load: MagicMock):
+        Test.mock_data(pickle_load)
+
+        await asyncio.sleep(2)
+        if (await Test.query("With a hey, ho", self.channel))[
+            1
+        ].content == ":notes: the wind and the rain :notes:":
+            green("Successfully linked bots.")
+        else:
+            red("Impostor")
 
         ok, tot = 0, 0
 
@@ -105,19 +129,18 @@ class Test:
                     ok += 1
                 tot += 1
 
+                Test.reset_data()
+                now.suppose_it_is(dt.now())
+
         color: Color = green if ok == tot else red
         color(f"Passed {ok}/{tot} tests.")
         exit(0)
 
     async def test_set_daily(self) -> None:
-        shit = await self.channel.send("daily 8am wake up")
-
-        assert (
-            response := await next_msg(self.channel, 1061719682773688391)
-        ), "Timed out waiting for response."
+        query, response = await Test.query("daily 8am wake up", self.channel)
 
         await asyncio.sleep(1)
-        assert await message_deleted(self.channel, shit), "Message wasn't deleted."
+        assert await message_deleted(self.channel, query)
 
         assert len(data.tasks) == 1
         assert isinstance(data.tasks[0], PeriodicAlert)
@@ -141,11 +164,49 @@ class Test:
                 self.channel, 1061719682773688391, is_not=response, sec=10
             )
         ), "Timed out waiting for response."
-        print(alert.content)
         assert alert.content.startswith(
             "Hey <@1074389982095089664>, this is a reminder to wake up."
         )
         assert alert.content.split(". ")[1].split(" ")[3].startswith("08:00")
+
+    async def test_set_in(self) -> None:
+        query, response = await Test.query("in 3d8h5m4s wake up", self.channel)
+        curr_time = dt.now()
+
+        await asyncio.sleep(1)
+        assert await message_deleted(self.channel, query)
+
+        assert len(data.tasks) == 1
+        assert isinstance(data.tasks[0], SingleAlert)
+        assert dict_subset(
+            {
+                "_activation_threshold": datetime.timedelta(seconds=30),
+                "repeatable": False,
+                "msg": "wake up",
+                "user": 1074389982095089664,
+                "channel_id": 1063934130397659236,
+                "_reminder_str": "Hey <@{user}>, this is a reminder to {msg}. It's currently {x}",
+            },
+            data.tasks[0].__dict__,
+        )
+        assert data.tasks[0].activation.hour == (curr_time.hour + 8) % 24
+        assert data.tasks[0].activation.minute == (curr_time.minute + 5) % 60
+
+        now.suppose_it_is(curr_time + timedelta(days=3, hours=8, minutes=5, seconds=2))
+
+        assert (
+            alert := await next_msg(
+                self.channel, 1061719682773688391, is_not=response, sec=10
+            )
+        ), "Timed out waiting for response."
+        assert alert.content.startswith(
+            "Hey <@1074389982095089664>, this is a reminder to wake up."
+        )
+
+    async def test_help(self) -> None:
+        _, response = await Test.query("help reminder", self.channel)
+
+        assert len(response.content.split("\n")) >= 15
 
 
 async def start(test_channel: PartialMessageable):

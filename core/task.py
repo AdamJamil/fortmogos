@@ -10,9 +10,7 @@ class Task:
     """Represents any event that should occur in the future, possibly multiple times."""
 
     def __init__(self) -> None:
-        self._activation_threshold = timedelta(
-            seconds=30
-        )
+        self._activation_threshold = timedelta(seconds=30)
         self.repeatable = False
 
     async def maybe_activate(self, curr_time: dt) -> bool:
@@ -109,6 +107,9 @@ class SingleTask(Task):
         return (
             timedelta() <= (curr_time - self.activation) <= self._activation_threshold
         )
+
+    def should_activate(self, curr_time: dt) -> bool:
+        return self.soon_past_activation(curr_time)
 
 
 class SaveTask(PeriodicTask):

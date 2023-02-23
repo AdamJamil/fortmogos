@@ -89,11 +89,7 @@ async def on_message(msg: Message):
 
 
 @client.event
-async def on_error(event: Any, *args: Any, **kwargs: Any):
-    print(
-        f"The type of `event` has been found: {type(event)}. Please update the typing"
-        "in `on_error`."
-    )
+async def on_error(event: str, *args: Any, **kwargs: Any):
     print(event)
     exit(1)
 

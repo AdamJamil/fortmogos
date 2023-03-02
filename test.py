@@ -186,7 +186,9 @@ class Test:
                 "msg": "wake up",
                 "user": 1074389982095089664,
                 "channel_id": 1063934130397659236,
-                "_reminder_str": "Hey <@{user}>, this is a reminder to {msg}. It's currently {x}",
+                "_reminder_str": (
+                    "Hey <@{user}>, this is a reminder to {msg}. It's currently {x}"
+                ),
             },
             data.tasks[0].__dict__,
         )

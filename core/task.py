@@ -2,7 +2,7 @@ from datetime import datetime as dt, timedelta
 from math import ceil
 import discord
 from core.timer import now
-from core.utils import time_dist
+from core.utils.time import time_dist
 from core.data import PersistentInfo
 
 

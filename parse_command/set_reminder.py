@@ -3,7 +3,7 @@ import discord
 from core.task import PeriodicAlert, SingleAlert
 from core.data import PersistentInfo
 from core.timer import now
-from core.utils import logical_dt_repr, parse_duration, parse_time, replace_down
+from core.utils.time import logical_dt_repr, parse_duration, parse_time, replace_down
 
 
 async def set_reminder(

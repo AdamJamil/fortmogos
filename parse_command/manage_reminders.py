@@ -2,7 +2,7 @@ from typing import List
 import discord
 from core.task import Alert
 from core.data import PersistentInfo
-from core.utils import get_day_to_reminders, list_reminders
+from core.utils.parse_data import get_day_to_reminders, list_reminders
 
 
 async def manage_reminders(msg: discord.message.Message, data: PersistentInfo) -> None:
@@ -28,6 +28,6 @@ async def manage_reminders(msg: discord.message.Message, data: PersistentInfo) -
         if idx < 0 or idx >= len(reminders):
             await msg.reply("Hey <@{msg.author.id}>, you're an idiot :D")
         else:
-            data.alerts.remove(reminders[idx])
+            data.tasks.remove(reminders[idx])
             await msg.reply(f"Hey <@{msg.author.id}>, your alert was deleted.")
         await msg.delete()

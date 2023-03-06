@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any, List
 
 from core.data import PersistentInfo
 from parse_command.help import get_help
-from parse_command.manage_reminders import manage_reminders
+from parse_command.manage_reminder import manage_reminder
 from parse_command.set_reminder import set_reminder
 from core.utils.constants import TOKEN, client
 from core.timer import Timer
@@ -73,7 +73,7 @@ async def on_message(msg: Message):
         "see reminders",
         "view reminders",
     ] or msg.content.startswith("delete"):
-        await manage_reminders(msg, data)
+        await manage_reminder(msg, data)
 
 
 @client.event

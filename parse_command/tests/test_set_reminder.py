@@ -16,7 +16,7 @@ class TestSetReminder(Test):
         test_channel = get_test_channel()
         query, response = await query_channel("daily 8am wake up", test_channel)
 
-        await asyncio.sleep(1)
+        await asyncio.sleep(1)  # TODO(remove this sleep and combine with delete)
         assert await message_deleted(test_channel, query)
 
         assert len(data.tasks) == 1

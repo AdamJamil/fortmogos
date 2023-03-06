@@ -4,6 +4,8 @@ import discord
 with open("token.txt", "r") as f:
     TOKEN, TEST_TOKEN = f.read().strip().split("\n")
 
+fortmogos_id = 1061719682773688391
+
 GUILD = "suspcious"
 
 client = discord.Client(intents=discord.Intents.all())

@@ -1,6 +1,7 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, Any, Dict, Tuple
 from unittest.mock import MagicMock
+from core.utils.constants import fortmogos_id
 
 
 from core.utils.message import next_msg
@@ -35,7 +36,7 @@ async def query_channel(
     query = await channel.send(txt)
 
     assert (
-        response := await next_msg(channel, 1061719682773688391, is_not=query)
+        response := await next_msg(channel, fortmogos_id, is_not=query)
     ), "Timed out waiting for response."
 
     return query, response

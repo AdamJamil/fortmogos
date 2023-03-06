@@ -2,8 +2,6 @@ from datetime import datetime as dt
 from tests.main import Test
 from core.utils.time import parse_duration
 
-print("importing shit")
-
 
 class TestTimeUtils(Test):
     async def test_parse_duration(self) -> None:

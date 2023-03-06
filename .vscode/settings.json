@@ -6,9 +6,9 @@
         // "import sys; sys.path.insert(0, './core'); sys.path.insert(0, './parse_command'); sys.path.insert(0, './test')"
     ],
     "python.linting.flake8Enabled": true,
-    // "python.linting.flake8Args": [
-    //     "--ignore=E402",
-    // ],
+    "python.linting.flake8Args": [
+        "--ignore=E402,W503",
+    ],
     "editor.rulers": [88],
     "python.analysis.diagnosticSeverityOverrides": {
         "reportImportCycles": "none",

@@ -54,6 +54,7 @@ class TestSetReminder(Test):
         await asyncio.sleep(1)
         assert await message_deleted(test_channel, query)
 
+        print(f"data.tasks: {data.tasks}")
         assert len(data.tasks) == 1
         assert isinstance(data.tasks[0], SingleAlert)
         assert dict_subset(
@@ -69,8 +70,17 @@ class TestSetReminder(Test):
             },
             data.tasks[0].__dict__,
         )
-        assert data.tasks[0].activation.hour == (curr_time.hour + 8) % 24
-        assert data.tasks[0].activation.minute == (curr_time.minute + 5) % 60
+        assert data.tasks[0].activation.hour == (
+            (
+                curr_time.hour
+                + 8
+                + (curr_time.minute + 5 + (curr_time.second + 4 >= 60) >= 60)
+            )
+            % 24
+        )
+        assert data.tasks[0].activation.minute == (
+            (curr_time.minute + 5 + (curr_time.second + 4 >= 60)) % 60
+        )
 
         now.suppose_it_is(curr_time + timedelta(days=3, hours=8, minutes=5, seconds=2))
 

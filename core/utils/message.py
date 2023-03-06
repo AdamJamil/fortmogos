@@ -15,8 +15,8 @@ async def next_msg(
     is_not: Optional[Message] = None,
     sec: int = 3,
 ) -> Optional[Message]:
-    for _ in range(sec):
-        await asyncio.sleep(1)
+    for _ in range(sec * 2):
+        await asyncio.sleep(0.5)
         if (
             msg := await channel.history(limit=1).__anext__()
         ).author.id == user_id and msg != is_not:

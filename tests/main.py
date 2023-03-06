@@ -8,20 +8,23 @@ import traceback
 from typing import List
 from datetime import datetime as dt
 from unittest.mock import MagicMock, patch
-from core.utils.constants import TEST_TOKEN, get_test_channel, test_client
+import click
 
+
+from core.utils.constants import TEST_TOKEN, get_test_channel, test_client
 from tests.utils import mock_data, query_channel, reset_data
 from core.bot import start as start_bot
 from core.timer import now
 from core.utils.color import green, red, yellow
 from custom_typing.protocols import Color
 
+cov = None
+
 
 def load_test_classes() -> List[type]:
     test_classes: List[type] = []
     for root, _, files in os.walk("."):
         if root[:3] != ".\\." and not root.startswith(".\\venv"):
-            # print(root)
             for file in files:
                 if file.startswith("test_") and file.endswith(".py"):
                     module_name = file[:-3]
@@ -30,9 +33,11 @@ def load_test_classes() -> List[type]:
                     )
                     for _, obj in inspect.getmembers(
                         module,
-                        lambda x: inspect.isclass(x)
-                        and type(x).__name__ == TestMeta.__name__
-                        and x.__name__ != "Test",
+                        lambda x: (
+                            inspect.isclass(x)
+                            and type(x).__name__ == TestMeta.__name__
+                            and x.__name__ != "Test"
+                        ),
                     ):
                         test_classes.append(obj)
     return test_classes
@@ -75,32 +80,18 @@ class TestRunner:
                     reset_data()
                     now.suppose_it_is(dt.now())
 
+        if cov is not None:
+            cov.stop()
+            cov.save()
+            cov.html_report()
+            cov.erase()
         color: Color = green if ok == tot else red
         color(f"Passed {ok}/{tot} tests.")
         exit(0)
 
 
-# class TestMeta(type):
-#     test_runner = TestRunner()
-
-#     def __init__(cls, name: str, bases: Tuple[type, ...], attrs: Dict[str, Any]):
-#         if name == "Test":
-#             return
-#         print(f"Registering {name}.")
-#         print(cls)
-#         print(id(TestMeta))
-#         TestMeta.test_runner.tests.append(cls)
-#         super().__init__(name, bases, attrs)
-
-
 class TestMeta(type):
     ...
-    # test_classes: List[TestMeta] = []
-
-    # def __new__(cls, name: str, bases: Tuple[type, ...], attrs: Dict[str, Any]):
-    #     new_cls = super().__new__(cls, name, bases, attrs)
-    #     cls.test_classes.append(new_cls)
-    #     return new_cls
 
 
 class Test(metaclass=TestMeta):
@@ -127,7 +118,20 @@ async def start():
         ...
 
 
-def main():
+@click.command()
+@click.option(
+    "--coverage",
+    "check_coverage",
+    is_flag=True,
+    default=False,
+    help="Run tests and check coverage.",
+)
+def main(check_coverage: bool = False):
+    if check_coverage:
+        import coverage
+
+        cov = coverage.Coverage()
+        cov.start()
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     asyncio.run(start())

@@ -5,25 +5,17 @@ import atexit
 import traceback
 from typing import TYPE_CHECKING, Any, List
 
-import discord
 from core.data import PersistentInfo
 from parse_command.help import get_help
 from parse_command.manage_reminders import manage_reminders
 from parse_command.set_reminder import set_reminder
-
+from core.utils.constants import TOKEN, client
 from core.timer import Timer
 
 
 if TYPE_CHECKING:
     from discord.message import Message
     from discord.abc import MessageableChannel
-
-
-with open("token.txt", "r") as f:
-    TOKEN = f.read().strip().split("\n")[0]
-GUILD = "suspcious"
-
-client = discord.Client(intents=discord.Intents.all())
 
 
 @client.event
@@ -56,10 +48,6 @@ def shutdown() -> None:
     if data.alert_channels:
         asyncio.run(alert_shutdown(data.alert_channels))
         print("Sent channel alerts.")
-
-
-def test():
-    print("suspicious")
 
 
 @client.event

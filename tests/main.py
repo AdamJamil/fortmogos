@@ -8,7 +8,6 @@ import traceback
 from typing import List
 from datetime import datetime as dt
 from unittest.mock import MagicMock, patch
-import click
 
 
 from core.utils.constants import TEST_TOKEN, get_test_channel, test_client
@@ -17,8 +16,6 @@ from core.bot import start as start_bot
 from core.timer import now
 from core.utils.color import green, red, yellow
 from custom_typing.protocols import Color
-
-cov = None
 
 
 def load_test_classes() -> List[type]:
@@ -80,11 +77,6 @@ class TestRunner:
                     reset_data()
                     now.suppose_it_is(dt.now())
 
-        if cov is not None:
-            cov.stop()
-            cov.save()
-            cov.html_report()
-            cov.erase()
         color: Color = green if ok == tot else red
         color(f"Passed {ok}/{tot} tests.")
         exit(0)
@@ -118,20 +110,7 @@ async def start():
         ...
 
 
-@click.command()
-@click.option(
-    "--coverage",
-    "check_coverage",
-    is_flag=True,
-    default=False,
-    help="Run tests and check coverage.",
-)
-def main(check_coverage: bool = False):
-    if check_coverage:
-        import coverage
-
-        cov = coverage.Coverage()
-        cov.start()
+def main():
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     asyncio.run(start())

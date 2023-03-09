@@ -16,7 +16,7 @@ class TestSetReminder(Test):
         test_channel = get_test_channel()
         query, response = await query_channel("daily 8am wake up", test_channel)
 
-        await asyncio.sleep(1)  # TODO(remove this sleep and combine with delete)
+        # await asyncio.sleep(1)  # TODO(remove this sleep and turn into wait delete)
         assert await message_deleted(test_channel, query)
 
         assert len(data.tasks) == 1
@@ -78,6 +78,7 @@ class TestSetReminder(Test):
             )
             % 24
         )
+        # TODO(failure sometimes)
         assert data.tasks[0].activation.minute == (
             (curr_time.minute + 5 + (curr_time.second + 4 >= 60)) % 60
         )

@@ -1,3 +1,4 @@
+import os
 import discord
 
 
@@ -16,3 +17,6 @@ test_client = discord.Client(intents=discord.Intents.all())
 
 def get_test_channel() -> discord.PartialMessageable:
     return test_client.get_partial_messageable(test_channel_id)
+
+
+sep = "=" * os.get_terminal_size().columns

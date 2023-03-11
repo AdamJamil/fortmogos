@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING, Any, Dict, Tuple
+from typing import TYPE_CHECKING, Tuple
 from unittest.mock import MagicMock
 from core.utils.constants import fortmogos_id
 
@@ -11,10 +11,6 @@ from core.data import PersistentInfo
 if TYPE_CHECKING:
     from discord import PartialMessageable
     from discord.message import Message
-
-
-def dict_subset(x: Dict[Any, Any], y: Dict[Any, Any]):
-    return all(y[k] == v for k, v in x.items())
 
 
 def reset_data() -> None:

@@ -1,3 +1,4 @@
+import datetime
 from core.utils.constants import get_test_channel
 from tests.main import Test
 
@@ -10,22 +11,29 @@ class TestManageReminder(Test):
 
         _, _ = await query_channel("daily 8am wake up", test_channel)
         _, response = await query_channel("see reminders", test_channel)
-        assert (
-            response.content
-            == """Here are your reminders, <@1074389982095089664>.
+        day = "Tomorrow" if datetime.datetime.now().hour >= 8 else "Today"
+        self.assert_equal(
+            response.content,
+            f"""Here are your reminders, <@1074389982095089664>.
 ```
-Today
+{day}
   8AM [daily]: wake up
 
-```"""
+```""",
         )
 
         _, response = await query_channel("delete 1", test_channel)
-        assert response.content == "Hey <@{msg.author.id}>, you're an idiot :D"
+        self.assert_equal(
+            response.content, "Hey <@{msg.author.id}>, you're an idiot :D"
+        )
 
         _, response = await query_channel("delete 0", test_channel)
-        assert response.content == "Hey <@1074389982095089664>, your alert was deleted."
+        self.assert_equal(
+            response.content, "Hey <@1074389982095089664>, your alert was deleted."
+        )
 
         _, response = await query_channel("see reminders", test_channel)
         print(response.content)
-        assert response.content == "You have no reminders, <@1074389982095089664>."
+        self.assert_equal(
+            response.content, "You have no reminders, <@1074389982095089664>."
+        )

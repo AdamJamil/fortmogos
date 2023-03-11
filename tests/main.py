@@ -1,21 +1,22 @@
 from __future__ import annotations
+import difflib
 
 import importlib
 import asyncio
 import inspect
 import os
 import traceback
-from typing import List
+from typing import Any, Dict, List
 from datetime import datetime as dt
 from unittest.mock import MagicMock, patch
 
 
-from core.utils.constants import TEST_TOKEN, get_test_channel, test_client
+from core.utils.constants import TEST_TOKEN, get_test_channel, test_client, sep
 from tests.utils import mock_data, query_channel, reset_data
 from core.bot import start as start_bot
 from core.timer import now
 from core.utils.color import green, red, yellow
-from custom_typing.protocols import Color
+from custom_typing.protocols import Color, Measureable
 
 
 def load_test_classes() -> List[type]:
@@ -87,7 +88,51 @@ class TestMeta(type):
 
 
 class Test(metaclass=TestMeta):
-    ...
+    def assert_equal(self, x: Any, y: Any):
+        if x != y:
+            for i, s in enumerate(difflib.ndiff(x, y)):
+                if s[0] == " ":
+                    continue
+                elif s[0] == "-":
+                    print('Delete "{}" from position {}'.format(s[-1], i))
+                elif s[0] == "+":
+                    print('Add "{}" to position {}'.format(s[-1], i))
+            raise AssertionError(
+                f"These objects are not equal:\n{sep}\n{x}\n{sep}\n{y}\n{sep}"
+            )
+
+    def assert_geq(self, x: int, y: int):
+        if x < y:
+            raise AssertionError(f"{x} is not >= {y}.")
+
+    def assert_true(self, x: bool):
+        if not x:
+            raise AssertionError(f"{x} is very much not True.")
+
+    def assert_is_instance(self, x: Any, y: type):
+        if not isinstance(x, y):
+            raise AssertionError(f"{x} of type {type(x)} is not an instance of {y}.")
+
+    def assert_dict_subset(self, x: Dict[Any, Any], y: Dict[Any, Any]):
+        if not all(k in y.keys() and y[k] == v for k, v in x.items()):
+            res = (
+                f"Former dict is not a subset of latter:\n{sep}\n{x}\n{sep}\n{y}\n{sep}"
+            )
+            mismatch = {k: v for (k, v) in x.items() if k not in y.keys() or y[k] != v}
+            res += f"\nMismatch:\n{sep}\n{mismatch}\n{sep}"
+            raise AssertionError(mismatch)
+
+    def assert_starts_with(self, x: str, y: str):
+        if not x.startswith(y):
+            raise AssertionError(
+                f"Former str does not start with latter:\n{sep}\n{x}\n{sep}\n{y}\n{sep}"
+            )
+
+    def assert_len(self, x: Measureable, y: int):
+        if not len(x) == y:
+            raise AssertionError(
+                f"Container does not have length {y}:\n{sep}\n{x}\n{sep}"
+            )
 
 
 @test_client.event

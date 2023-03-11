@@ -7,4 +7,4 @@ class TestHelp(Test):
     async def test_help(self) -> None:
         _, response = await query_channel("help reminder", get_test_channel())
 
-        assert len(response.content.split("\n")) >= 15
+        self.assert_geq(len(response.content.split("\n")), 15)

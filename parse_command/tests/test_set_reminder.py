@@ -17,7 +17,7 @@ class TestSetReminder(Test):
         test_channel = get_test_channel()
         query, response = await query_channel("daily 8am wake up", test_channel)
 
-        await asyncio.sleep(0.1)  # TODO(remove this sleep and turn into wait delete)
+        await asyncio.sleep(0.2)  # TODO(remove this sleep and turn into wait delete)
         self.assert_true(await message_deleted(test_channel, query))
 
         self.assert_len(data.tasks, 1)
@@ -46,15 +46,21 @@ class TestSetReminder(Test):
             alert.content, "Hey <@1074389982095089664>, this is a reminder to wake up."
         )
         self.assert_starts_with(alert.content.split(". ")[1].split(" ")[3], "08:00")
+        print(f"Tasks after test_set_daily: {data.tasks}")
+        print(id(data))
 
     async def test_set_in(self) -> None:
+        print(f"Tasks at start of test: {data.tasks}")
+        print(id(data.tasks))
         test_channel = get_test_channel()
         query, response = await query_channel("in 3d8h5m4s wake up", test_channel)
         curr_time = dt.now()
 
-        await asyncio.sleep(0.1)
+        await asyncio.sleep(0.2)
         self.assert_true(await message_deleted(test_channel, query))
 
+        print(f"Tasks right before: {data.tasks}")
+        print(id(data.tasks))
         self.assert_len(data.tasks, 1)
         self.assert_is_instance(data.tasks[0], SingleAlert)
         self.assert_dict_subset(

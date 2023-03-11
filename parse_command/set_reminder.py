@@ -29,6 +29,7 @@ async def set_daily(
         reminder_dt = replace_down((curr := now()), "hour", reminder_time)
         if reminder_dt < curr:
             reminder_dt += timedelta(days=1)
+        print("Appending now")
         data.tasks.append(
             PeriodicAlert(
                 reminder_str,

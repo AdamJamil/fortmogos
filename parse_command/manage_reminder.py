@@ -26,7 +26,7 @@ async def manage_reminder(msg: discord.message.Message, data: PersistentInfo) ->
         shit = get_day_to_reminders(data)
         reminders: List[Alert] = [y[1] for x in shit.values() for y in x]
         if idx < 0 or idx >= len(reminders):
-            await msg.reply("Hey <@{msg.author.id}>, you're an idiot :D")
+            await msg.reply(f"Hey <@{msg.author.id}>, you're an idiot :D")
         else:
             data.tasks.remove(reminders[idx])
             await msg.reply(f"Hey <@{msg.author.id}>, your alert was deleted.")

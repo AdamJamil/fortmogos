@@ -10,10 +10,9 @@ from typing import Any, Dict, List
 from datetime import datetime as dt
 from unittest.mock import MagicMock, patch
 
-
 from core.utils.constants import TEST_TOKEN, get_test_channel, test_client, sep
 from tests.utils import mock_data, query_channel, reset_data
-from core.bot import start as start_bot
+from core.bot import start as start_bot, data
 from core.timer import now
 from core.utils.color import green, red, yellow
 from custom_typing.protocols import Color, Measureable
@@ -64,7 +63,7 @@ class TestRunner:
             test = test_cls()
             for attr in dir(test):
                 if attr.startswith("test_"):
-                    yellow(f"Running {attr}.")
+                    yellow(f"[🏃] Running {attr}.")
                     try:
                         await getattr(test, attr)()
                     except Exception:
@@ -75,7 +74,11 @@ class TestRunner:
                         ok += 1
                     tot += 1
 
+                    print(f"Tasks before reset: {data.tasks}")
+                    print(id(data))
                     reset_data()
+                    print(f"Tasks after reset: {data.tasks}")
+                    print(id(data))
                     now.suppose_it_is(dt.now())
 
         color: Color = green if ok == tot else red

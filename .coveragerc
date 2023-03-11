@@ -1,0 +1,8 @@
+[run]
+branch = True
+omit =
+    core/data.py
+    core/bot.py
+    tests/main.py
+    custom_typing/protocols.py
+    **/__init__.py

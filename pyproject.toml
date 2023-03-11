@@ -1,4 +1,0 @@
-[tool.coverage.run]
-omit = [
-    "core/data.py"
-]

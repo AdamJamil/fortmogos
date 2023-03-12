@@ -9,3 +9,8 @@ class Color(Protocol):
 class Measureable(Protocol):
     def __len__(self) -> int:
         ...
+
+
+class Repr_able(Protocol):
+    def __repr__(self) -> str:
+        ...

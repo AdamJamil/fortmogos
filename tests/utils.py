@@ -1,4 +1,5 @@
 from __future__ import annotations
+import queue
 from typing import TYPE_CHECKING, Tuple
 from unittest.mock import MagicMock
 from core.utils.constants import fortmogos_id
@@ -20,10 +21,19 @@ def reset_data() -> None:
     data.alert_channels = []
 
 
-def mock_data(pickle_load: MagicMock) -> None:
+def mock_load(pickle_load: MagicMock) -> None:
     pickle_load.return_value = PersistentInfo.__new__(PersistentInfo)
+    pickle_load.return_value.message_queue = queue.Queue[bool]()
     pickle_load.return_value.tasks = []
     pickle_load.return_value.alert_channels = []
+
+
+def mock_save(data_save: MagicMock) -> None:
+    data_save.return_value = None
+
+
+def mock_put(put_save: MagicMock) -> None:
+    put_save.return_value = None
 
 
 async def query_channel(

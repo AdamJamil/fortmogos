@@ -11,7 +11,7 @@ from datetime import datetime as dt
 from unittest.mock import MagicMock, patch
 
 from core.utils.constants import TEST_TOKEN, get_test_channel, test_client, sep
-from tests.utils import mock_data, query_channel, reset_data
+from tests.utils import mock_load, mock_save, query_channel, reset_data
 from core.bot import start as start_bot, data
 from core.timer import now
 from core.utils.color import green, red, yellow
@@ -45,8 +45,11 @@ class TestRunner:
         self.tests: List["TestMeta"] = []
 
     @patch("core.data.pickle.load")
-    async def run(self, pickle_load: MagicMock):
-        mock_data(pickle_load)
+    @patch("core.data.PersistentInfo.save")
+    async def run(self, pickle_load: MagicMock, data_save: MagicMock):
+        mock_load(pickle_load)
+        mock_save(data_save)
+
         tests = load_test_classes()
 
         await asyncio.sleep(1)

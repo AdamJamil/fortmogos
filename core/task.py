@@ -1,9 +1,8 @@
 from datetime import datetime as dt, timedelta
 from math import ceil
-import discord
 from core.timer import now
 from core.utils.time import time_dist
-from core.data import PersistentInfo
+from core.utils.constants import client
 
 
 class Task:
@@ -112,19 +111,6 @@ class SingleTask(Task):
         return self.soon_past_activation(curr_time)
 
 
-class SaveTask(PeriodicTask):
-    """
-    Saves the data to disk.
-    """
-
-    def __init__(self, data: PersistentInfo) -> None:
-        super().__init__(periodicity=timedelta(seconds=10), first_activation=now())
-        self.data = data
-
-    async def activate(self) -> None:
-        self.data.save()
-
-
 class Alert(Task):
     """Parent class of all alerts"""
 
@@ -133,14 +119,12 @@ class Alert(Task):
         msg: str,
         user: int,
         channel_id: int,
-        client: discord.Client,
         descriptor_tag: str = "",
     ) -> None:
         Task.__init__(self)
         self.msg = msg
         self.user = user
         self.channel_id = channel_id
-        self.client = client
         self.descriptor_tag = descriptor_tag
         self._reminder_str: str = (
             "Hey <@{user}>, this is a reminder to {msg}. It's currently {x}"
@@ -152,7 +136,7 @@ class Alert(Task):
         e.g. for tasks we want to schedule for ourselves. May need to be refactored if
         we want to group alert messages together.
         """
-        await self.client.get_partial_messageable(
+        await client.get_partial_messageable(
             self.channel_id,
         ).send(self._reminder_str.format(user=self.user, msg=self.msg, x=now()))
 
@@ -163,12 +147,11 @@ class PeriodicAlert(Alert, PeriodicTask):
         msg: str,
         user: int,
         channel_id: int,
-        client: discord.Client,
         periodicity: timedelta,
         first_activation: dt,
         descriptor_tag: str = "",
     ) -> None:
-        Alert.__init__(self, msg, user, channel_id, client, descriptor_tag)
+        Alert.__init__(self, msg, user, channel_id, descriptor_tag)
         PeriodicTask.__init__(self, periodicity, first_activation)
 
 
@@ -178,9 +161,8 @@ class SingleAlert(Alert, SingleTask):
         msg: str,
         user: int,
         channel_id: int,
-        client: discord.Client,
         activation: dt,
         descriptor_tag: str = "",
     ) -> None:
-        Alert.__init__(self, msg, user, channel_id, client, descriptor_tag)
+        Alert.__init__(self, msg, user, channel_id, descriptor_tag)
         SingleTask.__init__(self, activation)

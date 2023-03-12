@@ -6,10 +6,11 @@ import traceback
 from typing import TYPE_CHECKING, Any, List
 
 from core.data import PersistentInfo
+from core.utils.color import red
 from parse_command.help import get_help
 from parse_command.manage_reminder import manage_reminder
 from parse_command.set_reminder import set_reminder
-from core.utils.constants import TOKEN, client
+from core.utils.constants import TOKEN, sep, client
 from core.timer import Timer
 
 
@@ -78,7 +79,12 @@ async def on_message(msg: Message):
 
 @client.event
 async def on_error(event: str, *args: Any, **kwargs: Any):
-    print(event)
+    red(f"Discord threw an exception:\n{sep.ins('event')}")
+    red(event)
+    red(sep.ins('args'))
+    red(args)
+    red(sep.ins('kwargs'))
+    red(kwargs)
     exit(1)
 
 

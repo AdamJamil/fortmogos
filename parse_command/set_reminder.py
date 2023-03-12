@@ -35,7 +35,6 @@ async def set_daily(
                 reminder_str,
                 msg.author.id,
                 msg.channel.id,
-                client,
                 timedelta(days=1),
                 reminder_dt,
                 "[daily]",
@@ -65,7 +64,6 @@ async def set_in(
                 reminder_str,
                 msg.author.id,
                 msg.channel.id,
-                client,
                 reminder_time,
             )
         )

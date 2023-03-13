@@ -88,7 +88,8 @@ def _date_suffix(day: int) -> str:
 
 
 def logical_time_repr(stamp: Union[dt, Time]) -> str:
-    return stamp.strftime("%#I%p") if not stamp.minute else stamp.strftime("%#I:%M%p")
+    res = stamp.strftime("%I%p") if not stamp.minute else stamp.strftime("%I:%M%p")
+    return res[res[0] == "0":]
 
 
 def logical_dt_repr(stamp: Union[dt, Time]) -> str:

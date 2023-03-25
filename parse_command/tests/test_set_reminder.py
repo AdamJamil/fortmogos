@@ -1,6 +1,11 @@
 import asyncio
 from typing import cast
-from core.utils.constants import get_test_channel
+from core.utils.constants import (
+    get_test_channel,
+    test_channel_id,
+    fakemogus_id,
+    testmogus_id,
+)
 from tests.main import Test
 
 import datetime
@@ -25,8 +30,8 @@ class TestSetReminder(Test):
         self.assert_dict_subset(
             {
                 "msg": "wake up",
-                "user": 1074389982095089664,
-                "channel_id": 1063934130397659236,
+                "user": testmogus_id,
+                "channel_id": test_channel_id,
                 "_repeat_activation_threshold": datetime.timedelta(seconds=30),
                 "periodicity": datetime.timedelta(days=1),
             },
@@ -38,12 +43,10 @@ class TestSetReminder(Test):
         now.suppose_it_is(now().replace(hour=7, minute=59, second=59))
 
         assert (
-            alert := await next_msg(
-                test_channel, 1061719682773688391, is_not=response, sec=10
-            )
+            alert := await next_msg(test_channel, fakemogus_id, is_not=response, sec=10)
         ), "Timed out waiting for response."
         self.assert_starts_with(
-            alert.content, "Hey <@1074389982095089664>, this is a reminder to wake up."
+            alert.content, f"Hey <@{testmogus_id}>, this is a reminder to wake up."
         )
         self.assert_starts_with(alert.content.split(". ")[1].split(" ")[3], "08:00")
         print(f"Tasks after test_set_daily: {data.tasks}")
@@ -68,8 +71,8 @@ class TestSetReminder(Test):
                 "_activation_threshold": datetime.timedelta(seconds=30),
                 "repeatable": False,
                 "msg": "wake up",
-                "user": 1074389982095089664,
-                "channel_id": 1063934130397659236,
+                "user": testmogus_id,
+                "channel_id": test_channel_id,
                 "_reminder_str": (
                     "Hey <@{user}>, this is a reminder to {msg}. It's currently {x}"
                 ),
@@ -96,10 +99,8 @@ class TestSetReminder(Test):
         now.suppose_it_is(curr_time + timedelta(days=3, hours=8, minutes=5, seconds=2))
 
         assert (
-            alert := await next_msg(
-                test_channel, 1061719682773688391, is_not=response, sec=10
-            )
+            alert := await next_msg(test_channel, fakemogus_id, is_not=response, sec=10)
         ), "Timed out waiting for response."
         self.assert_starts_with(
-            alert.content, "Hey <@1074389982095089664>, this is a reminder to wake up."
+            alert.content, f"Hey <@{testmogus_id}>, this is a reminder to wake up."
         )

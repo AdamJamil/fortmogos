@@ -5,15 +5,25 @@ from custom_typing.protocols import Repr_able
 
 
 with open("token.txt", "r") as f:
-    TOKEN, TEST_TOKEN = f.read().strip().split("\n")
+    TOKEN, TEST_TOKEN, FAKE_TOKEN = f.read().strip().split("\n")
 
-fortmogos_id = 1061719682773688391
+
+def get_token():
+    return TOKEN
+
+
+def get_test_token():
+    return TEST_TOKEN
+
+
+fakemogus_id = 1089042918259564564
+testmogus_id = 1074389982095089664
 
 GUILD = "suspcious"
 
 client = discord.Client(intents=discord.Intents.all())
 
-test_channel_id = 1063934130397659236
+test_channel_id = 1089045607840231505
 test_client = discord.Client(intents=discord.Intents.all())
 
 

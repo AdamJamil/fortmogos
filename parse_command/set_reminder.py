@@ -29,8 +29,7 @@ async def set_daily(
         reminder_dt = replace_down((curr := now()), "hour", reminder_time)
         if reminder_dt < curr:
             reminder_dt += timedelta(days=1)
-        print("Appending now")
-        data.tasks.append(
+        data.append_task(
             PeriodicAlert(
                 reminder_str,
                 msg.author.id,
@@ -59,7 +58,7 @@ async def set_in(
             f"Your command `{msg.content}` failed: {reminder_time}"
         )
     else:
-        data.tasks.append(
+        data.append_task(
             SingleAlert(
                 reminder_str,
                 msg.author.id,

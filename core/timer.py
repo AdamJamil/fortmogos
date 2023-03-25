@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from core.data import PersistentInfo
+    from core.task import Task
 
 
 class Now:
@@ -35,11 +36,11 @@ class Timer:
 
         while 1:
             print(f"It's currently {' '.join(str(now()).split(' ')[1:])}")
-            self.data.tasks = [
-                task
-                for task in self.data.tasks
-                if not await task.maybe_activate(self.timer) or task.repeatable
-            ]
+
+            async def should_keep_task(task: "Task") -> bool:
+                return not await task.maybe_activate(self.timer) or task.repeatable
+
+            await self.data.async_filter_tasks(should_keep_task)
 
             await asyncio.sleep(max(0, 0.5 - (now() - self.timer).total_seconds()))
             self.timer = now()

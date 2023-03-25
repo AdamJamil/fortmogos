@@ -12,7 +12,7 @@ from unittest.mock import MagicMock, patch
 
 from core.utils.constants import TEST_TOKEN, get_test_channel, test_client, sep
 from tests.utils import mock_load, mock_save, query_channel, reset_data, mock_get_token
-from core.bot import start as start_bot, data
+from core.bot import start as start_bot
 from core.timer import now
 from core.utils.color import green, red, yellow
 from custom_typing.protocols import Color, Measureable
@@ -81,11 +81,7 @@ class TestRunner:
                         ok += 1
                     tot += 1
 
-                    print(f"Tasks before reset: {data.tasks}")
-                    print(id(data))
                     reset_data()
-                    print(f"Tasks after reset: {data.tasks}")
-                    print(id(data))
                     now.suppose_it_is(dt.now())
 
         color: Color = green if ok == tot else red

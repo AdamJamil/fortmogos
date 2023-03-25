@@ -17,14 +17,14 @@ if TYPE_CHECKING:
 def reset_data() -> None:
     from core.bot import data
 
-    data.tasks = []
-    data.alert_channels = []
+    data.clear_tasks()
+    data.alert_channels.clear()
 
 
 def mock_load(pickle_load: MagicMock) -> None:
     pickle_load.return_value = PersistentInfo.__new__(PersistentInfo)
     pickle_load.return_value.message_queue = queue.Queue[bool]()
-    pickle_load.return_value.tasks = []
+    pickle_load.return_value._tasks = []
     pickle_load.return_value.alert_channels = []
 
 

@@ -11,7 +11,7 @@ from datetime import datetime as dt
 from unittest.mock import MagicMock, patch
 
 from core.utils.constants import TEST_TOKEN, get_test_channel, test_client, sep
-from tests.utils import mock_load, mock_save, query_channel, reset_data
+from tests.utils import mock_load, mock_save, query_channel, reset_data, mock_get_token
 from core.bot import start as start_bot, data
 from core.timer import now
 from core.utils.color import green, red, yellow
@@ -46,9 +46,13 @@ class TestRunner:
 
     @patch("core.data.pickle.load")
     @patch("core.data.PersistentInfo.save")
-    async def run(self, pickle_load: MagicMock, data_save: MagicMock):
+    @patch("core.utils.constants.get_token")
+    async def run(
+        self, pickle_load: MagicMock, data_save: MagicMock, get_token: MagicMock
+    ):
         mock_load(pickle_load)
         mock_save(data_save)
+        mock_get_token(get_token)
 
         tests = load_test_classes()
 
@@ -126,7 +130,7 @@ class Test(metaclass=TestMeta):
             )
             mismatch = {k: v for (k, v) in x.items() if k not in y.keys() or y[k] != v}
             res += f"\nMismatch:\n{sep}\n{mismatch}\n{sep}"
-            raise AssertionError(mismatch)
+            raise AssertionError(res)
 
     def assert_starts_with(self, x: str, y: str):
         if not x.startswith(y):

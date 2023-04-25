@@ -13,7 +13,7 @@ from datetime import datetime as dt, timedelta
 from tests.utils import query_channel
 from core.utils.message import message_deleted, next_msg
 from core.bot import data
-from core.task import PeriodicAlert, SingleAlert
+from core.data.writable import PeriodicAlert, SingleAlert
 from core.timer import now
 
 
@@ -27,15 +27,15 @@ class TestSetReminder(Test):
 
         self.assert_len(data.tasks, 1)
         self.assert_is_instance(data.tasks[0], PeriodicAlert)
-        self.assert_dict_subset(
+        self.assert_has_attrs(
+            data.tasks[0],
             {
                 "msg": "wake up",
                 "user": testmogus_id,
                 "channel_id": test_channel_id,
-                "_repeat_activation_threshold": datetime.timedelta(seconds=30),
+                "_repeat_activation_threshold": datetime.timedelta(seconds=60),
                 "periodicity": datetime.timedelta(days=1),
             },
-            data.tasks[0].__dict__,
         )
         self.assert_equal(cast(PeriodicAlert, data.tasks[0]).first_activation.hour, 8)
         self.assert_equal(cast(PeriodicAlert, data.tasks[0]).first_activation.minute, 0)
@@ -60,7 +60,8 @@ class TestSetReminder(Test):
 
         self.assert_len(data.tasks, 1)
         self.assert_is_instance(data.tasks[0], SingleAlert)
-        self.assert_dict_subset(
+        self.assert_has_attrs(
+            data.tasks[0],
             {
                 "_activation_threshold": datetime.timedelta(seconds=30),
                 "repeatable": False,
@@ -71,7 +72,6 @@ class TestSetReminder(Test):
                     "Hey <@{user}>, this is a reminder to {msg}. It's currently {x}"
                 ),
             },
-            data.tasks[0].__dict__,
         )
         self.assert_equal(
             cast(SingleAlert, data.tasks[0]).activation.hour,

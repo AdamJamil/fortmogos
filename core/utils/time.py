@@ -41,8 +41,8 @@ def parse_duration(duration_string: str, curr_time: dt) -> Union[dt, str]:
 
 def parse_time(time_string: str) -> Union[Time, str]:
     valid_fmts = "The valid formats are HH{am/pm} and HH:MM{am/pm}."
-    if (":" in time_string and len(time_string) < 6 or len(time_string) > 7) or (
-        ":" not in time_string and len(time_string) < 3 or len(time_string) > 4
+    if (":" in time_string and (len(time_string) < 6 or len(time_string) > 7)) or (
+        ":" not in time_string and (len(time_string) < 3 or len(time_string) > 4)
     ):
         return f"`{time_string}` isn't formatted correctly. " + valid_fmts
     try:
@@ -89,7 +89,7 @@ def _date_suffix(day: int) -> str:
 
 def logical_time_repr(stamp: Union[dt, Time]) -> str:
     res = stamp.strftime("%I%p") if not stamp.minute else stamp.strftime("%I:%M%p")
-    return res[res[0] == "0":]
+    return res[res[0] == "0" :]
 
 
 def logical_dt_repr(stamp: Union[dt, Time]) -> str:

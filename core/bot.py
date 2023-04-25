@@ -5,7 +5,8 @@ import atexit
 import traceback
 from typing import TYPE_CHECKING, Any, List
 
-from core.data import PersistentInfo
+from core.data.handler import DataHandler
+from core.data.writable import AlertChannel
 from core.utils.color import red
 from parse_command.help import get_help
 from parse_command.manage_reminder import manage_reminder
@@ -16,7 +17,6 @@ from core.timer import Timer
 
 if TYPE_CHECKING:
     from discord.message import Message
-    from discord.abc import MessageableChannel
 
 
 @client.event
@@ -32,11 +32,11 @@ async def on_ready():
 
 help_messages = []
 
-data = PersistentInfo(client)
+data = DataHandler(client)
 timer = Timer(data)
 
 
-async def alert_shutdown(channels: List[MessageableChannel]):
+async def alert_shutdown(channels: List[AlertChannel]):
     await asyncio.gather(*(channel.send("zzz") for channel in channels))
 
 
@@ -66,7 +66,7 @@ async def on_message(msg: Message):
             f"Got it, <@{msg.author.id}>. This channel will now be used "
             "to send alerts out regarding the state of the bot."
         )
-        data.alert_channels.append(msg.channel)
+        data.alert_channels.append(AlertChannel(msg.channel))
         await msg.delete()
     elif msg.content in [
         "list reminders",

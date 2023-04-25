@@ -1,7 +1,7 @@
 import os
 import discord
 
-from custom_typing.protocols import Repr_able
+from custom_typing.protocols import Str_able
 
 
 with open("token.txt", "r") as f:
@@ -27,6 +27,7 @@ test_channel_id = 1089045607840231505
 test_client = discord.Client(intents=discord.Intents.all())
 
 
+# TODO: figure out how to mock this more accurately
 def get_test_channel() -> discord.PartialMessageable:
     return test_client.get_partial_messageable(test_channel_id)
 
@@ -43,7 +44,7 @@ class Separator:
     def __str__(self) -> str:
         return "=" * os.get_terminal_size().columns
 
-    def ins(self, x: Repr_able) -> str:
+    def ins(self, x: Str_able) -> str:
         w = os.get_terminal_size().columns
         rx = repr(x)
         if len(rx) > w:

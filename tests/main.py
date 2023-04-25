@@ -1,17 +1,18 @@
 from __future__ import annotations
-import difflib
 
+import difflib
 import importlib
 import asyncio
 import inspect
 import os
+import sys
 import traceback
 from typing import Any, Dict, List
 from datetime import datetime as dt
 from unittest.mock import MagicMock, patch
 
 from core.utils.constants import TEST_TOKEN, get_test_channel, test_client, sep
-from tests.utils import mock_load, mock_save, query_channel, reset_data, mock_get_token
+from tests.utils import query_channel, reset_data, mock_get_token
 from core.bot import start as start_bot
 from core.timer import now
 from core.utils.color import green, red, yellow
@@ -44,14 +45,8 @@ class TestRunner:
     def __init__(self) -> None:
         self.tests: List["TestMeta"] = []
 
-    @patch("core.data.pickle.load")
-    @patch("core.data.PersistentInfo.save")
     @patch("core.utils.constants.get_token")
-    async def run(
-        self, pickle_load: MagicMock, data_save: MagicMock, get_token: MagicMock
-    ):
-        mock_load(pickle_load)
-        mock_save(data_save)
+    async def run(self, get_token: MagicMock):
         mock_get_token(get_token)
 
         tests = load_test_classes()
@@ -70,6 +65,9 @@ class TestRunner:
             test = test_cls()
             for attr in dir(test):
                 if attr.startswith("test_"):
+                    if len(sys.argv) == 2 and not attr.startswith(sys.argv[1]):
+                        continue
+                    reset_data()
                     yellow(f"[🏃] Running {attr}.")
                     try:
                         await getattr(test, attr)()
@@ -81,7 +79,6 @@ class TestRunner:
                         ok += 1
                     tot += 1
 
-                    reset_data()
                     now.suppose_it_is(dt.now())
 
         color: Color = green if ok == tot else red
@@ -95,14 +92,18 @@ class TestMeta(type):
 
 class Test(metaclass=TestMeta):
     def assert_equal(self, x: Any, y: Any):
+        if type(x) == type(y) == dict:
+            self.assert_dict_equal(x, y)
+            return
         if x != y:
-            for i, s in enumerate(difflib.ndiff(x, y)):
-                if s[0] == " ":
-                    continue
-                elif s[0] == "-":
-                    print('Delete "{}" from position {}'.format(s[-1], i))
-                elif s[0] == "+":
-                    print('Add "{}" to position {}'.format(s[-1], i))
+            if type(x) == type(y) == str:
+                for i, s in enumerate(difflib.ndiff(x, y)):
+                    if s[0] == " ":
+                        continue
+                    elif s[0] == "-":
+                        print('Delete "{}" from position {}'.format(s[-1], i))
+                    elif s[0] == "+":
+                        print('Add "{}" to position {}'.format(s[-1], i))
             raise AssertionError(
                 f"These objects are not equal:\n{sep}\n{x}\n{sep}\n{y}\n{sep}"
             )
@@ -119,13 +120,18 @@ class Test(metaclass=TestMeta):
         if not isinstance(x, y):
             raise AssertionError(f"{x} of type {type(x)} is not an instance of {y}.")
 
+    def assert_dict_equal(self, x: Dict[Any, Any], y: Dict[Any, Any]):
+        self.assert_dict_subset(x, y)
+        self.assert_dict_subset(y, x)
+
     def assert_dict_subset(self, x: Dict[Any, Any], y: Dict[Any, Any]):
         if not all(k in y.keys() and y[k] == v for k, v in x.items()):
             res = (
-                f"Former dict is not a subset of latter:\n{sep}\n{x}\n{sep}\n{y}\n{sep}"
+                f"Former dict is not a subset of latter:\n{sep.ins('Former')}\n{x}"
+                f"\n{sep.ins('Latter')}\n{y}\n"
             )
             mismatch = {k: v for (k, v) in x.items() if k not in y.keys() or y[k] != v}
-            res += f"\nMismatch:\n{sep}\n{mismatch}\n{sep}"
+            res += f"{sep.ins('Mismatch')}\n{mismatch}\n{sep}"
             raise AssertionError(res)
 
     def assert_starts_with(self, x: str, y: str):
@@ -139,6 +145,16 @@ class Test(metaclass=TestMeta):
             raise AssertionError(
                 f"Container does not have length {y}:\n{sep}\n{x}\n{sep}"
             )
+
+    def assert_has_attrs(self, x: Any, y: Dict[str, Any]):
+        mismatch = ""
+        for k, v in y.items():
+            if not hasattr(x, k):
+                mismatch += f"Missing field {k}.\n"
+            elif (av := getattr(x, k)) != v:
+                mismatch += f"{k}:\n\tExpected: {v}\n\tGot: {av}\n"
+        if mismatch:
+            raise AssertionError(f"Object fields are incorrect:\n{mismatch}")
 
 
 @test_client.event

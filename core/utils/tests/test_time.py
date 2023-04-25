@@ -1,6 +1,6 @@
-from datetime import datetime as dt
+from datetime import datetime as dt, time as Time
 from tests.main import Test
-from core.utils.time import parse_duration
+from core.utils.time import parse_duration, parse_time
 
 
 class TestTimeUtils(Test):
@@ -26,3 +26,11 @@ class TestTimeUtils(Test):
             "Found character `g` which isn't a valid unit"
             ' of time. The options are "y", "n" (month), "d", "h", "m", "s".',
         )
+
+    async def test_parse_time(self) -> None:
+        self.assert_is_instance(parse_time("1:48pm"), Time)
+        self.assert_is_instance(parse_time("11:48pm"), Time)
+        self.assert_is_instance(parse_time("1pm"), Time)
+
+        self.assert_is_instance(parse_time("111:48pm"), str)
+        self.assert_is_instance(parse_time(":428pm"), str)

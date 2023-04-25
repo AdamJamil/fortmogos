@@ -5,19 +5,20 @@ from typing import (
     DefaultDict,
     List,
     Tuple,
+    cast,
 )
-from core.data import PersistentInfo
+from core.data.handler import DataHandler
 from core.timer import now
 from core.utils.time import logical_time_repr, relative_day_str, replace_down
 
 if TYPE_CHECKING:
-    from core.task import Alert
+    from core.data.writable import Alert
 
 
 def get_day_to_reminders(
-    data: PersistentInfo,
+    data: DataHandler,
 ) -> DefaultDict[dt, List[Tuple[dt, "Alert"]]]:
-    from core.task import Alert
+    from core.data.writable import Alert
 
     curr_time = now()
     day_to_reminders: DefaultDict[dt, List[Tuple[dt, Alert]]] = defaultdict(lambda: [])
@@ -32,7 +33,7 @@ def get_day_to_reminders(
     return day_to_reminders
 
 
-def list_reminders(data: PersistentInfo) -> str:
+def list_reminders(data: DataHandler) -> str:
     day_to_reminders = get_day_to_reminders(data)
     ret = ""
     for day, reminders in day_to_reminders.items():
@@ -42,7 +43,7 @@ def list_reminders(data: PersistentInfo) -> str:
                 + logical_time_repr(reminder_time)
                 + (" " + reminder.descriptor_tag).rstrip()
                 + ": "
-                + reminder.msg
+                + cast(str, reminder.msg)
             )
             for reminder_time, reminder in reminders
         )

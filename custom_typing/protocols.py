@@ -11,6 +11,6 @@ class Measureable(Protocol):
         ...
 
 
-class Repr_able(Protocol):
-    def __repr__(self) -> str:
+class Str_able(Protocol):
+    def __str__(self) -> str:
         ...

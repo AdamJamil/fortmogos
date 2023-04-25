@@ -4,8 +4,8 @@ from typing import TYPE_CHECKING
 
 
 if TYPE_CHECKING:
-    from core.data import PersistentInfo
-    from core.task import Task
+    from core.data.handler import DataHandler
+    from core.data.writable import Task
 
 
 class Now:
@@ -24,7 +24,7 @@ now = Now()
 
 
 class Timer:
-    def __init__(self, data: "PersistentInfo"):
+    def __init__(self, data: "DataHandler"):
         self.timer = now()
         self.data = data
 
@@ -40,7 +40,7 @@ class Timer:
             async def should_keep_task(task: "Task") -> bool:
                 return not await task.maybe_activate(self.timer) or task.repeatable
 
-            await self.data.async_filter_tasks(should_keep_task)
+            await self.data.tasks.async_filter(should_keep_task)
 
             await asyncio.sleep(max(0, 0.5 - (now() - self.timer).total_seconds()))
             self.timer = now()

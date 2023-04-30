@@ -152,9 +152,10 @@ class Test(metaclass=TestMeta):
             if not hasattr(x, k):
                 mismatch += f"Missing field {k}.\n"
             elif (av := getattr(x, k)) != v:
-                mismatch += f"{k}:\n\tExpected: {v}\n\tGot: {av}\n"
+                mismatch += f"{k}:\n    Expected: {v}\n    Got: {av}\n"
         if mismatch:
-            raise AssertionError(f"Object fields are incorrect:\n{mismatch}")
+            res = f"Object fields are incorrect:\n{mismatch}"
+            raise AssertionError(res)
 
 
 @test_client.event

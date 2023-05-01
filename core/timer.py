@@ -10,14 +10,22 @@ if TYPE_CHECKING:
 
 class Now:
     def __init__(self) -> None:
+        self.start = dt.now()
         self.offset: timedelta = timedelta()
+        self._speed = 1
 
-    def __call__(self, do_not_mock: bool = False) -> dt:
-        return dt.now() + self.offset
+    def __call__(self) -> dt:
+        _now = dt.now()
+        return _now + (self._speed - 1) * (_now - self.start) + self.offset
 
     def suppose_it_is(self, new_time: dt) -> None:
         # new_time = now + offset
         self.offset = new_time - dt.now()
+        self.start = new_time - self.offset
+
+    def set_speed(self, new_speed: float) -> None:
+        self._speed = new_speed
+        self.start = dt.now()
 
 
 now = Now()

@@ -11,7 +11,7 @@ from core.utils.color import red
 from parse_command.help import get_help
 from parse_command.manage_reminder import manage_reminder
 from parse_command.set_reminder import set_reminder
-from core.utils.constants import sep, client, FAKE_TOKEN
+from core.utils.constants import get_token, sep, client
 from core.timer import Timer
 
 
@@ -89,7 +89,7 @@ async def on_error(event: str, *args: Any, **kwargs: Any):
 
 
 def get_awaitables():
-    return asyncio.gather(client.start(FAKE_TOKEN), timer.run())
+    return asyncio.gather(client.start(get_token()), timer.run())
 
 
 async def start():

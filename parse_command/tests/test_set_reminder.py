@@ -43,12 +43,17 @@ class TestSetReminder(Test):
         now.suppose_it_is(now().replace(hour=7, minute=59, second=59))
 
         assert (
-            alert := await next_msg(test_channel, fakemogus_id, is_not=response, sec=10)
+            alert := await next_msg(test_channel, fakemogus_id, is_not=response)
         ), "Timed out waiting for response."
         self.assert_starts_with(
             alert.content, f"Hey <@{testmogus_id}>, this is a reminder to wake up."
         )
         self.assert_starts_with(alert.content.split(". ")[1].split(" ")[3], "08:00")
+
+        now.set_speed(2 * 60 / 4)  # 2 minutes should go by in 4 seconds
+        maybe_alert = await next_msg(test_channel, fakemogus_id, is_not=alert, sec=5)
+
+        assert maybe_alert is None, "Got an alert somehow"
 
     async def test_set_in(self) -> None:
         test_channel = get_test_channel()

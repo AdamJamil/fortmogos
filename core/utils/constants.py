@@ -9,11 +9,10 @@ with open("token.txt", "r") as f:
 
 
 def get_token():
+    """
+    This function is mocked during testing.
+    """
     return TOKEN
-
-
-def get_test_token():
-    return TEST_TOKEN
 
 
 fakemogus_id = 1089042918259564564

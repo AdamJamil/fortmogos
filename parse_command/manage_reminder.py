@@ -12,7 +12,7 @@ async def manage_reminder(msg: discord.message.Message, data: DataHandler) -> No
         "see reminders",
         "view reminders",
     ]:
-        shit = list_reminders(data)
+        shit = list_reminders(data, msg.author.id)
         if shit:
             await msg.reply(
                 f"Here are your reminders, <@{msg.author.id}>."
@@ -23,7 +23,7 @@ async def manage_reminder(msg: discord.message.Message, data: DataHandler) -> No
         await msg.delete()
     elif msg.content.startswith("delete"):
         idx = int(msg.content.split(" ")[1])
-        shit = get_day_to_reminders(data)
+        shit = get_day_to_reminders(data, msg.author.id)
         reminders: List[Alert] = [y[1] for x in shit.values() for y in x]
         if idx <= 0 or idx > len(reminders):
             await msg.reply(f"Hey <@{msg.author.id}>, you're an idiot :D")

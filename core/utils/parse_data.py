@@ -17,13 +17,14 @@ if TYPE_CHECKING:
 
 def get_day_to_reminders(
     data: DataHandler,
+    user_id: int,
 ) -> DefaultDict[dt, List[Tuple[dt, "Alert"]]]:
     from core.data.writable import Alert
 
     curr_time = now()
     day_to_reminders: DefaultDict[dt, List[Tuple[dt, Alert]]] = defaultdict(lambda: [])
     for reminder in data.tasks:
-        if isinstance(reminder, Alert):
+        if isinstance(reminder, Alert) and reminder.user == user_id:
             reminder_day = replace_down(
                 reminder_dt := reminder.get_next_activation(curr_time), 3, zero=True
             )
@@ -33,8 +34,8 @@ def get_day_to_reminders(
     return day_to_reminders
 
 
-def list_reminders(data: DataHandler) -> str:
-    day_to_reminders = get_day_to_reminders(data)
+def list_reminders(data: DataHandler, user_id: int) -> str:
+    day_to_reminders = get_day_to_reminders(data, user_id)
     ret = ""
     for day, reminders in day_to_reminders.items():
         reminder_strs = (

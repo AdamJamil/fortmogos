@@ -1,4 +1,6 @@
 from datetime import datetime as dt, time as Time
+
+import pytz
 from tests.main import Test
 from core.utils.time import parse_duration, parse_time
 
@@ -28,9 +30,10 @@ class TestTimeUtils(Test):
         )
 
     async def test_parse_time(self) -> None:
-        self.assert_is_instance(parse_time("1:48pm"), Time)
-        self.assert_is_instance(parse_time("11:48pm"), Time)
-        self.assert_is_instance(parse_time("1pm"), Time)
+        est = pytz.timezone("US/Eastern")
+        self.assert_is_instance(parse_time("1:48pm", est), Time)
+        self.assert_is_instance(parse_time("11:48pm", est), Time)
+        self.assert_is_instance(parse_time("1pm", est), Time)
 
-        self.assert_is_instance(parse_time("111:48pm"), str)
-        self.assert_is_instance(parse_time(":428pm"), str)
+        self.assert_is_instance(parse_time("111:48pm", est), str)
+        self.assert_is_instance(parse_time(":428pm", est), str)

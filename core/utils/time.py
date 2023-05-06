@@ -6,10 +6,18 @@ from typing import (
     Union,
 )
 from dateutil.relativedelta import relativedelta
+import pytz
+from pytz.tzinfo import BaseTzInfo
 from core.timer import now
 
 
-def parse_duration(duration_string: str, curr_time: dt) -> Union[dt, str]:
+def parse_duration(
+    duration_string: str,
+    curr_time: dt,
+) -> Union[dt, str]:
+    """
+    Takes in a UTC time and returns that time plus the duration in question.
+    """
     valid_fmts = (
         "A valid duration is written with no spaces, and alternates "
         'between numbers and units of time (e.g. "2d1h5s").'
@@ -39,7 +47,7 @@ def parse_duration(duration_string: str, curr_time: dt) -> Union[dt, str]:
     return curr_time
 
 
-def parse_time(time_string: str) -> Union[Time, str]:
+def parse_time(time_string: str, timezone: BaseTzInfo) -> Union[Time, str]:
     valid_fmts = "The valid formats are HH{am/pm} and HH:MM{am/pm}."
     if (":" in time_string and (len(time_string) < 6 or len(time_string) > 7)) or (
         ":" not in time_string and (len(time_string) < 3 or len(time_string) > 4)
@@ -62,8 +70,10 @@ def parse_time(time_string: str) -> Union[Time, str]:
         minute = int(time_string.split(":")[1][:2]) if len(time_string) > 4 else 0
     except Exception:
         return f"Couldn't parse minute from `{time_string.split(':')[1][:2]}`."
-
-    return Time(minute=minute, hour=hour)
+    user_datetime = timezone.localize(
+        now().replace(hour=hour, minute=minute, second=0, microsecond=0)
+    )
+    return user_datetime.astimezone(pytz.utc).time()
 
 
 def time_dist(t1: Time, t2: Time) -> timedelta:
@@ -87,34 +97,42 @@ def _date_suffix(day: int) -> str:
         return date_suffix[0]
 
 
-def logical_time_repr(stamp: Union[dt, Time]) -> str:
+def logical_time_repr(stamp: Union[dt, Time], timezone: BaseTzInfo) -> str:
+    """
+    Takes in a UTC timestamp and returns a string that represents the stamp in the
+    user's timezone.
+    """
+    if isinstance(stamp, Time):
+        stamp = replace_down(now(), "hour", stamp)
+    stamp = stamp.astimezone(timezone)
     res = stamp.strftime("%I%p") if not stamp.minute else stamp.strftime("%I:%M%p")
     return res[res[0] == "0" :]
 
 
-def logical_dt_repr(stamp: Union[dt, Time]) -> str:
-    curr = now()
+def logical_dt_repr(stamp: Union[dt, Time], timezone: BaseTzInfo) -> str:
+    """
+    stamp must be a UTC timestamp
+    """
+    curr = pytz.utc.localize(now())
     if isinstance(stamp, Time):
         stamp = curr.replace(hour=stamp.hour, minute=stamp.minute, second=stamp.second)
+    if stamp.tzinfo is None:
+        stamp = pytz.utc.localize(stamp)
+
+    date_str = ""
     if stamp.year != curr.year:
-        return stamp.strftime("on %#m/%#d/%y") + " at " + logical_time_repr(stamp)
-    if stamp.month != curr.month:
-        return (
-            stamp.strftime(f"on %b %#d{_date_suffix(int(stamp.strftime('%d')))}")
-            + " at "
-            + logical_time_repr(stamp)
+        date_str = f'{stamp.strftime("on %#m/%#d/%y")}'
+    elif stamp.month != curr.month:
+        date_str = stamp.strftime(f"on %b %#d{_date_suffix(int(stamp.strftime('%d')))}")
+    elif stamp.day != curr.day:
+        date_str = stamp.strftime(
+            f"on the %#d{_date_suffix(int(stamp.strftime('%d')))}"
         )
-    if stamp.day != curr.day:
-        return (
-            stamp.strftime(f"on the %#d{_date_suffix(int(stamp.strftime('%d')))}")
-            + " at "
-            + logical_time_repr(stamp)
-        )
-    return "at " + logical_time_repr(stamp)
+    return date_str + (" at " if date_str else "") + logical_time_repr(stamp, timezone)
 
 
-def relative_day_str(stamp: Union[dt, Time]) -> str:
-    curr = now()
+def relative_day_str(stamp: Union[dt, Time], timezone: BaseTzInfo) -> str:
+    curr = now().astimezone(timezone)
     if isinstance(stamp, Time):
         return "Today"
     tomorrow = curr + relativedelta(days=1)
@@ -143,9 +161,17 @@ def replace_down(
     source_stamp: Optional[Union[dt, Time]] = None,
     zero: bool = False,  # zero out the fields in question
 ) -> T:
+    """
+    Takes a destination timestamp to modify, a time unit, and a source timestamp to
+    take values from (or alternatively just a zero flag). The time unit supplied will be
+    the largest modified value in the destination timestamp. Everything smaller than
+    this unit will also be modified.
+
+    The destination timestamp is NOT directly modified. A copy is returned.
+    """
     if not source_stamp and not zero:
         raise TypeError("fuck you")
-    res = dest_stamp
+    res = dest_stamp.replace()  # make a copy
     idx_to_attr: Dict[int, str] = {
         6: "year",
         5: "month",

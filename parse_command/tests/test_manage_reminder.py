@@ -3,6 +3,8 @@ from core.utils.constants import get_test_channel
 from tests.main import Test
 
 from tests.utils import query_channel
+from core.bot import data
+from core.utils.constants import testmogus_id
 
 
 class TestManageReminder(Test):
@@ -11,7 +13,11 @@ class TestManageReminder(Test):
 
         _, _ = await query_channel("daily 8am wake up", test_channel)
         _, response = await query_channel("see reminders", test_channel)
-        day = "Tomorrow" if datetime.datetime.now().hour >= 8 else "Today"
+        day = (
+            "Tomorrow"
+            if datetime.datetime.now(data.timezones[testmogus_id].tz).hour >= 8
+            else "Today"
+        )
         self.assert_equal(
             response.content,
             f"""Here are your reminders, <@1074389982095089664>.
@@ -33,7 +39,6 @@ class TestManageReminder(Test):
         )
 
         _, response = await query_channel("see reminders", test_channel)
-        print(response.content)
         self.assert_equal(
             response.content, "You have no reminders, <@1074389982095089664>."
         )

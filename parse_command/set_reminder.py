@@ -20,7 +20,10 @@ async def set_daily(
 ) -> None:
     tokens = [x for x in msg.content.split(" ") if x]
     time_str, reminder_str = tokens[1], " ".join(tokens[2:])
-    if isinstance((reminder_time := parse_time(time_str)), str):
+    tz = data.timezones[msg.author.id].tz
+    if isinstance(
+        (reminder_time := parse_time(time_str, tz)), str
+    ):
         response = msg.reply(
             f"Fuck you, <@{msg.author.id}>! "
             f"Your command `{msg.content}` failed: {reminder_time}"
@@ -40,7 +43,8 @@ async def set_daily(
             )
         )
         response = msg.reply(
-            f"<@{msg.author.id}>'s daily reminder {logical_dt_repr(reminder_time)}"
+            f"<@{msg.author.id}>'s daily reminder at "
+            f"{logical_dt_repr(reminder_time, tz)}"
             f' to "{reminder_str}" has been set.'
         )
     await response
@@ -52,7 +56,10 @@ async def set_in(
 ) -> None:
     tokens = [x for x in msg.content.split(" ") if x]
     duration_str, reminder_str = tokens[1], " ".join(tokens[2:])
-    if isinstance((reminder_time := parse_duration(duration_str, now())), str):
+    if isinstance(
+        (reminder_time := parse_duration(duration_str, now())),
+        str,
+    ):
         response = msg.reply(
             f"Fuck you, <@{msg.author.id}>! "
             f"Your command `{msg.content}` failed: {reminder_time}"
@@ -67,7 +74,8 @@ async def set_in(
             )
         )
         response = msg.reply(
-            f"<@{msg.author.id}>'s reminder {logical_dt_repr(reminder_time)}"
+            f"<@{msg.author.id}>'s reminder "
+            f"{logical_dt_repr(reminder_time, data.timezones[msg.author.id].tz)}"
             f' to "{reminder_str}" has been set.'
         )
     await response

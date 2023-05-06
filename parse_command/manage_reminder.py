@@ -20,7 +20,6 @@ async def manage_reminder(msg: discord.message.Message, data: DataHandler) -> No
             )
         else:
             await msg.reply(f"You have no reminders, <@{msg.author.id}>.")
-        await msg.delete()
     elif msg.content.startswith("delete"):
         idx = int(msg.content.split(" ")[1])
         shit = get_day_to_reminders(data, msg.author.id)
@@ -30,4 +29,4 @@ async def manage_reminder(msg: discord.message.Message, data: DataHandler) -> No
         else:
             data.tasks.remove(reminders[idx - 1])
             await msg.reply(f"Hey <@{msg.author.id}>, your alert was deleted.")
-        await msg.delete()
+    await msg.delete()

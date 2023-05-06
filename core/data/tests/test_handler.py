@@ -23,7 +23,7 @@ class TestHandler(Test):
         object.__setattr__(data, "tasks", None)
         object.__setattr__(data, "alert_channels", None)
 
-        data.__init__(data.client)
+        data.populate_data()
 
     def check_save_load(self) -> None:
         orig_tasks, orig_alerts = attrs(data.tasks), attrs(data.alert_channels)

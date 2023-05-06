@@ -11,9 +11,17 @@ from typing import Any, Dict, List
 from datetime import datetime as dt
 from unittest.mock import MagicMock, patch
 
-from core.utils.constants import TEST_TOKEN, get_test_channel, test_client, sep
+from core.data.writable import Timezone
+
+from core.utils.constants import (
+    TEST_TOKEN,
+    get_test_channel,
+    test_client,
+    sep,
+    testmogus_id,
+)
 from tests.utils import query_channel, reset_data, mock_get_token
-from core.bot import start as start_bot
+from core.bot import start as start_bot, data
 from core.timer import now
 from core.utils.color import green, red, yellow
 from custom_typing.protocols import Color, Measureable
@@ -45,11 +53,17 @@ class TestRunner:
     def __init__(self) -> None:
         self.tests: List["TestMeta"] = []
 
-    @patch("core.utils.constants.get_token")
+    @patch("core.bot.get_token")
     async def run(self, get_token: MagicMock):
         mock_get_token(get_token)
 
         tests = load_test_classes()
+
+        while not hasattr(data, "timezones"):
+            await asyncio.sleep(0.4)
+
+        data.timezones.clear()
+        data.timezones[testmogus_id] = Timezone(testmogus_id, "US/Eastern")
 
         await asyncio.sleep(1)
         if (await query_channel("With a hey, ho", get_test_channel()))[
@@ -97,13 +111,18 @@ class Test(metaclass=TestMeta):
             return
         if x != y:
             if type(x) == type(y) == str:
+                res = ""
                 for i, s in enumerate(difflib.ndiff(x, y)):
                     if s[0] == " ":
                         continue
                     elif s[0] == "-":
-                        print('Delete "{}" from position {}'.format(s[-1], i))
+                        res += 'Delete "{}" from position {}'.format(s[-1], i) + "\n"
                     elif s[0] == "+":
-                        print('Add "{}" to position {}'.format(s[-1], i))
+                        res += 'Add "{}" to position {}'.format(s[-1], i) + "\n"
+                if len(res.split("\n")) > 30:
+                    print("str difference too large to print")
+                else:
+                    print(res)
             raise AssertionError(
                 f"These objects are not equal:\n{sep}\n{x}\n{sep}\n{y}\n{sep}"
             )

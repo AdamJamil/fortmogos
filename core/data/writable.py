@@ -4,8 +4,9 @@ from math import ceil
 from typing import Any, Dict, cast
 
 import discord
+import pytz
 from core.timer import now
-from core.utils.time import time_dist
+from core.utils.time import logical_dt_repr, time_dist
 from core.utils.constants import client
 from sqlalchemy import Column, Float, Integer, String
 from sqlalchemy.orm import reconstructor  # type: ignore
@@ -44,9 +45,6 @@ class Immutable:
                 InstrumentedAttribute,
             )
         ):
-            print(type(getattr(self, key)))
-            if hasattr(self.__class__, key):
-                print(type(getattr(self.__class__, key)))
             raise TypeError("Object is immutable - make a new copy instead.")
         super().__setattr__(key, value)
 
@@ -112,7 +110,7 @@ class RepeatableTask(Task):
 
     async def maybe_activate(self, curr_time: dt) -> bool:
         if activated := await Task.maybe_activate(self, curr_time):
-            object.__setattr__(self, "_last_activated", now())
+            object.__setattr__(self, "_last_activated", curr_time)
         return activated
 
     def should_activate(self, curr_time: dt) -> bool:
@@ -148,7 +146,9 @@ class PeriodicTask(RepeatableTask):
     def init_on_load(self) -> None:
         super().init_on_load()
         self.periodicity = timedelta(seconds=self._periodicity)  # type: ignore
-        self.first_activation = dt.fromtimestamp(self._first_activation)  # type: ignore
+        self.first_activation = dt.fromtimestamp(
+            self._first_activation, tz=None  # type: ignore
+        )
 
     def get_next_activation(self, curr_time: dt) -> dt:
         # s + x * p >= c
@@ -240,9 +240,17 @@ class Alert(Task):
         e.g. for tasks we want to schedule for ourselves. May need to be refactored if
         we want to group alert messages together.
         """
+        from core.bot import data
+
         await client.get_partial_messageable(
             cast(int, self.channel_id),
-        ).send(self._reminder_str.format(user=self.user, msg=self.msg, x=now()))
+        ).send(
+            self._reminder_str.format(
+                user=self.user,
+                msg=self.msg,
+                x=logical_dt_repr(now(), data.timezones[cast(int, self.user)].tz),
+            )
+        )
 
 
 class PeriodicAlert(Alert, PeriodicTask, Base):
@@ -322,7 +330,29 @@ class AlertChannel(Base, discord.TextChannel):
 
     def set_channel(self, channel: "discord.abc.MessageableChannel") -> None:
         for k in dir(channel):
+            if k.startswith("__"):
+                continue
             try:
                 self.__setattr__(k, getattr(channel, k))
-            except (TypeError, AttributeError):
+            except Exception:
                 ...
+
+
+class Timezone(Base):
+    """
+    Represents the timezone of a single user.
+    """
+
+    __tablename__ = "timezone"
+
+    _id = Column(Integer, primary_key=True)
+    _tz = Column(String)
+
+    def __init__(self, user_id: int, tz: str) -> None:
+        self._id = user_id
+        self._tz = tz
+        self.tz = pytz.timezone(self._tz)
+
+    @reconstructor
+    def init_on_load(self) -> None:
+        self.tz = pytz.timezone(cast(str, self._tz))

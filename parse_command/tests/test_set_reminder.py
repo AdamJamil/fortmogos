@@ -1,15 +1,18 @@
 import asyncio
 from typing import cast
+
+import pytz
 from core.utils.constants import (
     get_test_channel,
     test_channel_id,
     fakemogus_id,
     testmogus_id,
 )
+from core.utils.time import logical_dt_repr
 from tests.main import Test
 
 import datetime
-from datetime import datetime as dt, timedelta
+from datetime import timedelta
 from tests.utils import query_channel
 from core.utils.message import message_deleted, next_msg
 from core.bot import data
@@ -21,6 +24,10 @@ class TestSetReminder(Test):
     async def test_set_daily(self) -> None:
         test_channel = get_test_channel()
         query, response = await query_channel("daily 8am wake up", test_channel)
+        self.assert_equal(
+            response.content,
+            f'<@{testmogus_id}>\'s daily reminder at 8AM to "wake up" has been set.',
+        )
 
         await asyncio.sleep(0.2)  # TODO(remove this sleep and turn into wait delete)
         self.assert_true(await message_deleted(test_channel, query))
@@ -37,10 +44,14 @@ class TestSetReminder(Test):
                 "periodicity": datetime.timedelta(days=1),
             },
         )
-        self.assert_equal(cast(PeriodicAlert, data.tasks[0]).first_activation.hour, 8)
-        self.assert_equal(cast(PeriodicAlert, data.tasks[0]).first_activation.minute, 0)
+        task_activation = cast(
+            PeriodicAlert, data.tasks[0]
+        ).first_activation.astimezone(data.timezones[query.author.id].tz)
+        self.assert_equal(task_activation.hour, 12)
+        self.assert_equal(task_activation.minute, 0)
 
-        now.suppose_it_is(now().replace(hour=7, minute=59, second=59))
+        # 12 UTC is 8 EST
+        now.suppose_it_is(now().replace(hour=11, minute=59, second=59))
 
         assert (
             alert := await next_msg(test_channel, fakemogus_id, is_not=response)
@@ -48,17 +59,17 @@ class TestSetReminder(Test):
         self.assert_starts_with(
             alert.content, f"Hey <@{testmogus_id}>, this is a reminder to wake up."
         )
-        self.assert_starts_with(alert.content.split(". ")[1].split(" ")[3], "08:00")
+        self.assert_starts_with(alert.content.split(". ")[1].split(" ")[2], "8AM")
 
-        now.set_speed(2 * 60 / 4)  # 2 minutes should go by in 4 seconds
-        maybe_alert = await next_msg(test_channel, fakemogus_id, is_not=alert, sec=5)
+        now.set_speed(2 * 60 / 2)  # 2 minutes should go by in 2 seconds
+        maybe_alert = await next_msg(test_channel, fakemogus_id, is_not=alert, sec=2)
 
         assert maybe_alert is None, "Got an alert somehow"
 
     async def test_set_in(self) -> None:
         test_channel = get_test_channel()
         query, response = await query_channel("in 3d8h5m4s wake up", test_channel)
-        curr_time = dt.now()
+        curr_time = now()
 
         await asyncio.sleep(0.2)
         self.assert_true(await message_deleted(test_channel, query))
@@ -78,27 +89,18 @@ class TestSetReminder(Test):
                 ),
             },
         )
-        self.assert_equal(
-            cast(SingleAlert, data.tasks[0]).activation.hour,
-            (
-                (
-                    curr_time.hour
-                    + 8
-                    + (curr_time.minute + 5 + (curr_time.second + 4 >= 60) >= 60)
-                )
-                % 24
-            ),
-        )
-        # TODO(failure sometimes)
-        self.assert_equal(
-            cast(SingleAlert, data.tasks[0]).activation.minute,
-            ((curr_time.minute + 5 + (curr_time.second + 4 >= 60)) % 60),
+        
+        activation = cast(SingleAlert, data.tasks[0]).activation
+        delta = timedelta(days=3, hours=8, minutes=5, seconds=4)
+        self.assert_geq(
+            5,
+            int((curr_time - activation + delta).total_seconds()),
         )
 
-        now.suppose_it_is(curr_time + timedelta(days=3, hours=8, minutes=5, seconds=2))
+        now.suppose_it_is(curr_time + delta)
 
         assert (
-            alert := await next_msg(test_channel, fakemogus_id, is_not=response, sec=10)
+            alert := await next_msg(test_channel, fakemogus_id, is_not=response)
         ), "Timed out waiting for response."
         self.assert_starts_with(
             alert.content, f"Hey <@{testmogus_id}>, this is a reminder to wake up."

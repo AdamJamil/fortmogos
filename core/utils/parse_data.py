@@ -7,6 +7,8 @@ from typing import (
     Tuple,
     cast,
 )
+
+import pytz
 from core.data.handler import DataHandler
 from core.timer import now
 from core.utils.time import logical_time_repr, relative_day_str, replace_down
@@ -23,10 +25,15 @@ def get_day_to_reminders(
 
     curr_time = now()
     day_to_reminders: DefaultDict[dt, List[Tuple[dt, Alert]]] = defaultdict(lambda: [])
+    tz = data.timezones[user_id].tz
     for reminder in data.tasks:
         if isinstance(reminder, Alert) and reminder.user == user_id:
             reminder_day = replace_down(
-                reminder_dt := reminder.get_next_activation(curr_time), 3, zero=True
+                reminder_dt := reminder.get_next_activation(curr_time)
+                .replace(tzinfo=pytz.utc)
+                .astimezone(tz),
+                3,
+                zero=True,
             )
             day_to_reminders[reminder_day].append((reminder_dt, reminder))
     for reminders in day_to_reminders.values():
@@ -41,12 +48,16 @@ def list_reminders(data: DataHandler, user_id: int) -> str:
         reminder_strs = (
             (
                 "  "
-                + logical_time_repr(reminder_time)
+                + logical_time_repr(reminder_time, data.timezones[user_id].tz)
                 + (" " + reminder.descriptor_tag).rstrip()
                 + ": "
                 + cast(str, reminder.msg)
             )
             for reminder_time, reminder in reminders
         )
-        ret += f"{relative_day_str(day)}\n" + "\n".join(reminder_strs) + "\n"
+        ret += (
+            f"{relative_day_str(day, data.timezones[user_id].tz)}\n"
+            + "\n".join(reminder_strs)
+            + "\n"
+        )
     return ret

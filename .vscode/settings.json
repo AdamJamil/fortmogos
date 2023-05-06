@@ -9,8 +9,11 @@
     "python.linting.flake8Args": [
         "--ignore=E402,W503",
     ],
-    "editor.rulers": [88],
+    "editor.rulers": [
+        88
+    ],
     "python.analysis.diagnosticSeverityOverrides": {
         "reportImportCycles": "none",
+        "reportPrivateUsage": "none",
     },
 }

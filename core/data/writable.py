@@ -8,7 +8,7 @@ import pytz
 from core.timer import now
 from core.utils.time import logical_dt_repr, time_dist
 from core.utils.constants import client
-from sqlalchemy import Column, Float, Integer, String
+from sqlalchemy import Boolean, Column, Float, Integer, String
 from sqlalchemy.orm import reconstructor  # type: ignore
 from core.data.base import Base
 from sqlalchemy.orm.attributes import InstrumentedAttribute
@@ -356,3 +356,21 @@ class Timezone(Base):
     @reconstructor
     def init_on_load(self) -> None:
         self.tz = pytz.timezone(cast(str, self._tz))
+
+
+class UserTask(Base):
+    """
+    A self-described user task. Appears in todo list.
+    """
+
+    __tablename__ = "user_task"
+
+    _id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer)
+    desc = Column(String)
+    completed = Column(Boolean)
+
+    def __init__(self, user_id: int, desc: str):
+        self.user_id = user_id
+        self.desc = desc
+        self.completed = False

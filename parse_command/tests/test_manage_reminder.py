@@ -28,12 +28,12 @@ class TestManageReminder(Test):
 ```""",
         )
 
-        _, response = await query_channel("delete 2", test_channel)
+        _, response = await query_channel("delete reminder 2", test_channel)
         self.assert_equal(
             response.content, "Hey <@1074389982095089664>, you're an idiot :D"
         )
 
-        _, response = await query_channel("delete 1", test_channel)
+        _, response = await query_channel("delete reminder 1", test_channel)
         self.assert_equal(
             response.content, "Hey <@1074389982095089664>, your alert was deleted."
         )

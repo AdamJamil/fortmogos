@@ -17,6 +17,7 @@ def reset_data() -> None:
 
     data.tasks.clear()
     data.alert_channels.clear()
+    data.user_tasks.clear()
 
 
 def mock_put(put_save: MagicMock) -> None:

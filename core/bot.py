@@ -10,6 +10,7 @@ from core.utils.color import green, red
 from core.utils.exceptions import MissingTimezoneException
 from parse_command.help import get_help
 from parse_command.manage_reminder import manage_reminder
+from parse_command.manage_task import add_task, delete_task, show_tasks
 from parse_command.manage_timezone import manage_timezone
 from parse_command.set_reminder import set_reminder
 from core.utils.constants import get_token, sep, client
@@ -72,13 +73,33 @@ async def on_message(msg: Message):
             )
             data.alert_channels.append(AlertChannel(msg.channel))
             await msg.delete()
-        elif msg.content in [
-            "list reminders",
-            "show reminders",
-            "see reminders",
-            "view reminders",
-        ] or msg.content.startswith("delete ") or msg.content.startswith("remove "):
+        elif (
+            msg.content
+            in [
+                "list reminders",
+                "show reminders",
+                "see reminders",
+                "view reminders",
+            ]
+            or msg.content.startswith("delete reminder ")
+            or msg.content.startswith("remove reminder ")
+        ):
             await manage_reminder(msg, data)
+        elif msg.content in [
+            "list tasks",
+            "show tasks",
+            "see tasks",
+            "view tasks",
+            "list todo",
+            "show todo",
+            "see todo",
+            "view todo",
+        ]:
+            await show_tasks(msg, data)
+        elif msg.content.startswith("task ") or msg.content.startswith("todo "):
+            await add_task(msg, data)
+        elif msg.content.startswith("delete task "):
+            await delete_task(msg, data)
         elif msg.content.startswith("exec"):
             exec(msg.content[6:-2])
     except MissingTimezoneException as e:

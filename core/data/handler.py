@@ -17,7 +17,7 @@ from typing import (
 import discord
 from core.data.base import Base
 from core.data.db import session
-from core.data.writable import AlertChannel, Task, Timezone
+from core.data.writable import AlertChannel, Task, Timezone, UserTask
 from core.utils.exceptions import MissingTimezoneException
 from core.utils.walk import subclasses_of
 
@@ -190,6 +190,9 @@ class DataHandler:
         )
         self.timezones: AtomicDBDict[int, Timezone] = AtomicDBDict(
             {cast(int, tz._id): tz for tz in session.query(Timezone).all()}
+        )
+        self.user_tasks: AtomicDBList[UserTask] = AtomicDBList(
+            session.query(UserTask).all()
         )
 
     def __setattr__(self, __name: str, __value: Any) -> None:

@@ -22,6 +22,7 @@ class TestHandler(Test):
     def reload_data(self) -> None:
         object.__setattr__(data, "tasks", None)
         object.__setattr__(data, "alert_channels", None)
+        object.__setattr__(data, "user_tasks", None)
 
         data.populate_data()
 

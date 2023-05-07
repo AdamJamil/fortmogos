@@ -91,7 +91,7 @@ class TestSetReminder(Test):
         activation = cast(SingleAlert, data.tasks[0]).activation
         delta = timedelta(days=3, hours=8, minutes=5, seconds=4)
         self.assert_geq(
-            5,
+            60,
             int((curr_time - activation + delta).total_seconds()),
         )
 

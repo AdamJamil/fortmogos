@@ -1,14 +1,12 @@
 import asyncio
 from typing import cast
 
-import pytz
 from core.utils.constants import (
     get_test_channel,
     test_channel_id,
     fakemogus_id,
     testmogus_id,
 )
-from core.utils.time import logical_dt_repr
 from tests.main import Test
 
 import datetime
@@ -85,11 +83,11 @@ class TestSetReminder(Test):
                 "user": testmogus_id,
                 "channel_id": test_channel_id,
                 "_reminder_str": (
-                    "Hey <@{user}>, this is a reminder to {msg}. It's currently {x}"
+                    "Hey <@{user}>, this is a reminder to {msg}. It's currently {x}."
                 ),
             },
         )
-        
+
         activation = cast(SingleAlert, data.tasks[0]).activation
         delta = timedelta(days=3, hours=8, minutes=5, seconds=4)
         self.assert_geq(

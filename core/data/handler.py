@@ -162,6 +162,13 @@ class AtomicDBDict(dict[K, V]):
 
 
 class DataHandler:
+    _instance = None
+
+    def __new__(cls, client: discord.Client):
+        if cls._instance is None:
+            cls._instance = super(DataHandler, cls).__new__(cls)
+        return cls._instance
+
     def __init__(self, client: discord.Client) -> None:
         self.client = client
 

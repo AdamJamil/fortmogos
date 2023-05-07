@@ -224,14 +224,14 @@ class Alert(Task):
         self.channel_id = channel_id
         self.descriptor_tag = descriptor_tag
         self._reminder_str: str = (
-            "Hey <@{user}>, this is a reminder to {msg}. It's currently {x}"
+            "Hey <@{user}>, this is a reminder to {msg}. It's currently {x}."
         )
 
     @reconstructor
     def init_on_load(self) -> None:
         super().init_on_load()
         self._reminder_str: str = (
-            "Hey <@{user}>, this is a reminder to {msg}. It's currently {x}"
+            "Hey <@{user}>, this is a reminder to {msg}. It's currently {x}."
         )
 
     async def activate(self) -> None:

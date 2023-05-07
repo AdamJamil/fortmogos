@@ -83,7 +83,6 @@ async def on_message(msg: Message):
             exec(msg.content[6:-2])
     except MissingTimezoneException as e:
         await msg.reply(str(e))
-        await msg.delete()
     except Exception as e:
         red(f"Wtf:\n{e}\n{traceback.format_exc()}")
         await msg.reply(f"Something broke:\n{e}\n{traceback.format_exc()}")

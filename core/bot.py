@@ -61,7 +61,7 @@ async def on_message(msg: Message):
             await msg.reply(":notes: the wind and the rain :notes:")
         elif msg.content.startswith("help "):
             await get_help(msg)
-        elif msg.content.startswith("timezone"):
+        elif msg.content.startswith("timezone "):
             await manage_timezone(msg, data)
         elif msg.content.startswith("daily ") or msg.content.startswith("in "):
             await set_reminder(msg, data, client)
@@ -77,7 +77,7 @@ async def on_message(msg: Message):
             "show reminders",
             "see reminders",
             "view reminders",
-        ] or msg.content.startswith("delete"):
+        ] or msg.content.startswith("delete ") or msg.content.startswith("remove "):
             await manage_reminder(msg, data)
         elif msg.content.startswith("exec"):
             exec(msg.content[6:-2])

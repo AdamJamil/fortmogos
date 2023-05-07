@@ -57,3 +57,6 @@ class Separator:
 
 
 sep = Separator()
+
+
+todo_emoji = "📋"

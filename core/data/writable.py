@@ -8,7 +8,7 @@ import pytz
 from core.timer import now
 from core.utils.exceptions import MissingTimezoneException
 from core.utils.time import logical_dt_repr, time_dist
-from core.utils.constants import client
+from core.utils.constants import client, todo_emoji
 from sqlalchemy import Boolean, Column, Float, Integer, String
 from sqlalchemy.orm import reconstructor  # type: ignore
 from core.data.base import Base
@@ -256,7 +256,9 @@ class Alert(Task):
                 x="some unknown time, since we don't have your timezone.",
             )
 
-        await client.get_partial_messageable(cast(int, self.channel_id)).send(msg)
+        res = await client.get_partial_messageable(cast(int, self.channel_id)).send(msg)
+        await res.add_reaction(todo_emoji)
+        data.reminder_msgs[cast(int, self.user), res] = self
 
 
 class PeriodicAlert(Alert, PeriodicTask, Base):

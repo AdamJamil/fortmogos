@@ -17,7 +17,7 @@ async def show_tasks(msg: discord.message.Message, data: DataHandler) -> None:
     res = "\n".join(
         f"{i+1}) {cast(str, y.desc)}"
         for i, y in enumerate(
-            x for x in data.user_tasks if x.user_id == msg.author.id
+            x for x in data.user_tasks if cast(int, x.user_id) == msg.author.id
         )
     )
     await msg.reply(
@@ -30,7 +30,7 @@ async def show_tasks(msg: discord.message.Message, data: DataHandler) -> None:
 
 async def delete_task(msg: discord.message.Message, data: DataHandler) -> None:
     idx = int(msg.content.split(" ")[2])
-    user_tasks = [x for x in data.user_tasks if x.user_id == msg.author.id]
+    user_tasks = [x for x in data.user_tasks if cast(int, x.user_id) == msg.author.id]
     if idx <= 0 or idx > len(user_tasks):
         await msg.reply(f"Hey <@{msg.author.id}>, you're an idiot :D")
     else:

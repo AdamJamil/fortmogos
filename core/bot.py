@@ -2,12 +2,15 @@ from __future__ import annotations
 
 import asyncio
 import traceback
-from typing import TYPE_CHECKING, Any, List
+from typing import TYPE_CHECKING, Any, List, Union
+
+from discord import Member, Reaction, User
 
 from core.data.handler import DataHandler
 from core.data.writable import AlertChannel
 from core.utils.color import green, red
 from core.utils.exceptions import MissingTimezoneException
+from parse_command.manage_reaction import manage_reaction
 from parse_command.help import get_help
 from parse_command.manage_reminder import manage_reminder
 from parse_command.manage_task import add_task, delete_task, show_tasks
@@ -118,6 +121,12 @@ async def on_message(msg: Message):
     except Exception as e:
         red(f"Wtf:\n{e}\n{traceback.format_exc()}")
         await msg.reply(f"Something broke:\n{e}\n{traceback.format_exc()}")
+
+
+@client.event
+async def on_reaction_add(reaction: Reaction, user: Union[Member, User]):
+    if str(user.id) in reaction.message.content:
+        await manage_reaction(reaction, user, data)
 
 
 @client.event

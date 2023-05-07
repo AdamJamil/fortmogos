@@ -9,18 +9,19 @@ if TYPE_CHECKING:
     from discord.message import Message
 
 
+async def last_msg(channel: discord.PartialMessageable) -> Message:
+    return await channel.history(limit=1).__anext__()
+
+
 async def next_msg(
     channel: discord.PartialMessageable,
     user_id: int,
     is_not: Optional[Message] = None,
     sec: int = 3,
 ) -> Optional[Message]:
-
     for _ in range(sec * 2):
         await asyncio.sleep(0.5)
-        if (
-            msg := await channel.history(limit=1).__anext__()
-        ).author.id == user_id and msg != is_not:
+        if (msg := await last_msg(channel)).author.id == user_id and msg != is_not:
             return msg
     return None
 

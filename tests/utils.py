@@ -4,7 +4,7 @@ from unittest.mock import MagicMock
 from core.utils.constants import fakemogus_id, FAKE_TOKEN
 
 
-from core.utils.message import next_msg
+from core.utils.message import last_msg, next_msg
 
 
 if TYPE_CHECKING:
@@ -38,3 +38,16 @@ async def query_channel(
     ), "Timed out waiting for response."
 
     return query, response
+
+
+async def query_message_with_reaction(
+    reaction: str, message: Message, channel: PartialMessageable
+) -> Message:
+    last = await last_msg(channel)
+    await message.add_reaction(reaction)
+
+    assert (
+        response := await next_msg(channel, fakemogus_id, is_not=last)
+    ), "Timed out waiting for response."
+
+    return response

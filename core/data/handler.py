@@ -138,11 +138,7 @@ class AtomicDBDict(dict[K, V]):
     def __getitem__(self, key: K) -> V:
         with self.lock:
             if not super().__contains__(key):
-                raise MissingTimezoneException(
-                    "Please report your timezone first! Report one of the following: "
-                    "the current time in your area `timezone 4:20PM`; the offset "
-                    "`timezone UTC+5`; the region name `timezone US/Eastern`."
-                )
+                raise MissingTimezoneException()
             return super().__getitem__(key)
 
     def __setitem__(self, key: K, value: V) -> None:
@@ -159,6 +155,9 @@ class AtomicDBDict(dict[K, V]):
                 session.delete(value)
             super().clear()
             session.commit()
+
+    def keys(self):
+        return super().keys()
 
 
 class DataHandler:

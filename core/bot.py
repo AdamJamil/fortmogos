@@ -64,8 +64,6 @@ async def on_message(msg: Message):
             await get_help(msg)
         elif msg.content.startswith("timezone "):
             await manage_timezone(msg, data)
-        elif msg.content.startswith("daily ") or msg.content.startswith("in "):
-            await set_reminder(msg, data, client)
         elif msg.content == "subscribe alerts":
             await msg.reply(
                 f"Got it, <@{msg.author.id}>. This channel will now be used "
@@ -102,8 +100,12 @@ async def on_message(msg: Message):
             await delete_task(msg, data)
         elif msg.content.startswith("exec"):
             exec(msg.content[6:-2])
+        elif msg.content.startswith("daily ") or msg.content.startswith("in "):
+            if msg.author.id not in data.timezones.keys():
+                raise MissingTimezoneException()
+            await set_reminder(msg, data, client)
     except MissingTimezoneException as e:
-        await msg.reply(str(e))
+        await msg.reply(e.help)
     except Exception as e:
         red(f"Wtf:\n{e}\n{traceback.format_exc()}")
         await msg.reply(f"Something broke:\n{e}\n{traceback.format_exc()}")

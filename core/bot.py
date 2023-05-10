@@ -53,6 +53,20 @@ def shutdown() -> None:
         green("Sent channel alerts.")
 
 
+def manage_reminder_check(msg: Message):
+    return (
+        msg.content
+        in [
+            "list reminders",
+            "show reminders",
+            "see reminders",
+            "view reminders",
+        ]
+        or msg.content.startswith("delete reminder ")
+        or msg.content.startswith("remove reminder ")
+    )
+
+
 @client.event
 async def on_message(msg: Message):
     if msg.author.id in (1061719682773688391, 1089042918259564564):
@@ -71,18 +85,6 @@ async def on_message(msg: Message):
             )
             data.alert_channels.append(AlertChannel(msg.channel))
             await msg.delete()
-        elif (
-            msg.content
-            in [
-                "list reminders",
-                "show reminders",
-                "see reminders",
-                "view reminders",
-            ]
-            or msg.content.startswith("delete reminder ")
-            or msg.content.startswith("remove reminder ")
-        ):
-            await manage_reminder(msg, data)
         elif msg.content in [
             "list tasks",
             "show tasks",
@@ -100,10 +102,17 @@ async def on_message(msg: Message):
             await delete_task(msg, data)
         elif msg.content.startswith("exec"):
             exec(msg.content[6:-2])
-        elif msg.content.startswith("daily ") or msg.content.startswith("in "):
+        elif (
+            msg.content.startswith("daily ")
+            or msg.content.startswith("in ")
+            or manage_reminder_check(msg)
+        ):
             if msg.author.id not in data.timezones.keys():
                 raise MissingTimezoneException()
-            await set_reminder(msg, data, client)
+            if manage_reminder_check(msg):
+                await manage_reminder(msg, data)
+            else:
+                await set_reminder(msg, data, client)
     except MissingTimezoneException as e:
         await msg.reply(e.help)
     except Exception as e:

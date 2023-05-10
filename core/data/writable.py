@@ -6,6 +6,7 @@ from typing import Any, Dict, cast
 import discord
 import pytz
 from core.timer import now
+from core.utils.exceptions import MissingTimezoneException
 from core.utils.time import logical_dt_repr, time_dist
 from core.utils.constants import client
 from sqlalchemy import Boolean, Column, Float, Integer, String
@@ -242,15 +243,20 @@ class Alert(Task):
         """
         from core.bot import data
 
-        await client.get_partial_messageable(
-            cast(int, self.channel_id),
-        ).send(
-            self._reminder_str.format(
+        try:
+            msg = self._reminder_str.format(
                 user=self.user,
                 msg=self.msg,
                 x=logical_dt_repr(now(), data.timezones[cast(int, self.user)].tz),
             )
-        )
+        except MissingTimezoneException:
+            msg = self._reminder_str.format(
+                user=self.user,
+                msg=self.msg,
+                x="some unknown time, since we don't have your timezone.",
+            )
+
+        await client.get_partial_messageable(cast(int, self.channel_id)).send(msg)
 
 
 class PeriodicAlert(Alert, PeriodicTask, Base):

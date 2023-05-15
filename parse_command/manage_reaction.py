@@ -18,4 +18,4 @@ async def manage_reaction(
                 f"Got it, <@{user.id}>. Your reminder to {alert.msg} "
                 "was added to your todo list."
             )
-            data.user_tasks.append(UserTask(msg.author.id, cast(str, alert.msg)))
+            data.user_tasks.append(UserTask(user.id, cast(str, alert.msg)))

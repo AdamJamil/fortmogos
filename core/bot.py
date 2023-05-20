@@ -101,7 +101,9 @@ async def on_message(msg: Message):
             await show_tasks(msg, data)
         elif msg.content.startswith("task ") or msg.content.startswith("todo "):
             await add_task(msg, data)
-        elif msg.content.startswith("delete task "):
+        elif msg.content.startswith("delete task ") or msg.content.startswith(
+            "delete todo "
+        ):
             await delete_task(msg, data)
         elif msg.content.startswith("exec"):
             exec(msg.content[6:-2])

@@ -30,5 +30,7 @@ async def manage_reminder(msg: discord.message.Message, data: DataHandler) -> No
             await msg.reply(f"Hey <@{msg.author.id}>, you're an idiot :D")
         else:
             data.tasks.remove(reminders[idx - 1])
-            await msg.reply(f"Hey <@{msg.author.id}>, your alert was deleted.")
+            await msg.reply(
+                f"Hey <@{msg.author.id}>, {reminders[idx - 1].full_desc} was deleted."
+            )
     await msg.delete()

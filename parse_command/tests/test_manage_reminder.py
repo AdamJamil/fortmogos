@@ -35,7 +35,11 @@ class TestManageReminder(Test):
 
         _, response = await query_channel("delete reminder 1", test_channel)
         self.assert_equal(
-            response.content, "Hey <@1074389982095089664>, your alert was deleted."
+            response.content,
+            (
+                "Hey <@1074389982095089664>, your daily reminder"
+                " at 12PM to wake up was deleted."
+            ),
         )
 
         _, response = await query_channel("see reminders", test_channel)

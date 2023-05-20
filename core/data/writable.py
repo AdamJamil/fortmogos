@@ -7,7 +7,7 @@ import discord
 import pytz
 from core.timer import now
 from core.utils.exceptions import MissingTimezoneException
-from core.utils.time import logical_dt_repr, time_dist
+from core.utils.time import logical_dt_repr, logical_time_repr, time_dist
 from core.utils.constants import client, todo_emoji
 from sqlalchemy import Boolean, Column, Float, Integer, String
 from sqlalchemy.orm import reconstructor  # type: ignore
@@ -260,6 +260,11 @@ class Alert(Task):
         await res.add_reaction(todo_emoji)
         data.reminder_msgs[cast(int, self.user), res] = self
 
+    @property
+    @abstractmethod
+    def full_desc(self) -> str:
+        ...
+
 
 class PeriodicAlert(Alert, PeriodicTask, Base):
     """Sends an alert at some periodicity"""
@@ -288,6 +293,18 @@ class PeriodicAlert(Alert, PeriodicTask, Base):
     def init_on_load(self) -> None:
         super().init_on_load()
 
+    @property
+    def full_desc(self) -> str:
+        from core.bot import data
+
+        if (self.periodicity - timedelta(days=1)).total_seconds() <= 5:
+            time_str = logical_time_repr(
+                self.first_activation, data.timezones[cast(int, self.user)].tz
+            )
+            return f"your daily reminder at {time_str} to {self.msg}"
+
+        raise NotImplementedError(f"The periodicity {self.periodicity} is unknown.")
+
 
 class SingleAlert(Alert, SingleTask, Base):
     """Sends only a single alert"""
@@ -313,6 +330,15 @@ class SingleAlert(Alert, SingleTask, Base):
     @reconstructor
     def init_on_load(self) -> None:
         super().init_on_load()
+
+    @property
+    def full_desc(self) -> str:
+        from core.bot import data
+
+        time_str = logical_dt_repr(
+            self.activation, data.timezones[cast(int, self.user)].tz
+        )
+        return f"your reminder at {time_str} to {self.msg}"
 
 
 class AlertChannel(Base, discord.TextChannel):

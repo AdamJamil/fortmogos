@@ -35,5 +35,8 @@ async def delete_task(msg: discord.message.Message, data: DataHandler) -> None:
         await msg.reply(f"Hey <@{msg.author.id}>, you're an idiot :D")
     else:
         data.user_tasks.remove(user_tasks[idx - 1])
-        await msg.reply(f"Hey <@{msg.author.id}>, your task was deleted.")
+        await msg.reply(
+            f"Hey <@{msg.author.id}>, your task "
+            f"`{user_tasks[idx - 1].desc}` was deleted."
+        )
     await msg.delete()

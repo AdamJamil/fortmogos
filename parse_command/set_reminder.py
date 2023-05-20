@@ -24,9 +24,9 @@ async def set_daily(
     if isinstance(
         (reminder_time := parse_time(time_str, tz)), str
     ):
-        response = msg.reply(
+        await msg.reply(
             f"Fuck you, <@{msg.author.id}>! "
-            f"Your command `{msg.content}` failed: {reminder_time}"
+            f"Your command failed: {reminder_time}"
         )
     else:
         reminder_dt = replace_down((curr := now()), "hour", reminder_time)
@@ -42,13 +42,12 @@ async def set_daily(
                 "[daily]",
             )
         )
-        response = msg.reply(
+        await msg.reply(
             f"<@{msg.author.id}>'s daily reminder at "
             f"{logical_dt_repr(reminder_time, tz)}"
             f' to "{reminder_str}" has been set.'
         )
-    await response
-    await msg.delete()
+        await msg.delete()
 
 
 async def set_in(
@@ -60,9 +59,9 @@ async def set_in(
         (reminder_time := parse_duration(duration_str, now())),
         str,
     ):
-        response = msg.reply(
+        await msg.reply(
             f"Fuck you, <@{msg.author.id}>! "
-            f"Your command `{msg.content}` failed: {reminder_time}"
+            f"Your command failed: {reminder_time}"
         )
     else:
         data.tasks.append(
@@ -73,10 +72,9 @@ async def set_in(
                 reminder_time,
             )
         )
-        response = msg.reply(
+        await msg.reply(
             f"<@{msg.author.id}>'s reminder "
             f"{logical_dt_repr(reminder_time, data.timezones[msg.author.id].tz)}"
             f' to "{reminder_str}" has been set.'
         )
-    await response
-    await msg.delete()
+        await msg.delete()

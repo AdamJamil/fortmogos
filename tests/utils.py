@@ -1,11 +1,10 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, Tuple
 from unittest.mock import MagicMock
-from core.utils.constants import fakemogus_id, FAKE_TOKEN
-
-
+from core.data.writable import Timezone, Wakeup
+from core.utils.constants import fakemogus_id, testmogus_id, FAKE_TOKEN, test_channel_id
 from core.utils.message import last_msg, next_msg
-
+from datetime import time as Time
 
 if TYPE_CHECKING:
     from discord import PartialMessageable
@@ -15,9 +14,21 @@ if TYPE_CHECKING:
 def reset_data() -> None:
     from core.bot import data
 
-    data.tasks.clear()
     data.alert_channels.clear()
-    data.user_tasks.clear()
+
+    for attr in dir(data):
+        if attr.startswith("__"):
+            continue
+        thing = getattr(data, attr)
+        if hasattr(thing, "clear"):
+            print(attr)
+            thing.clear()
+
+    data.timezones.clear()
+    data.timezones[testmogus_id] = Timezone(testmogus_id, "US/Eastern")
+
+    data.wakeup.clear()
+    data.wakeup[testmogus_id] = Wakeup(testmogus_id, Time(hour=10), test_channel_id)
 
 
 def mock_put(put_save: MagicMock) -> None:

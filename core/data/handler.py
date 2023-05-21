@@ -17,7 +17,7 @@ from typing import (
 import discord
 from core.data.base import Base
 from core.data.db import session
-from core.data.writable import Alert, AlertChannel, Task, Timezone, UserTask
+from core.data.writable import Alert, AlertChannel, Task, Timezone, UserTask, Wakeup
 from core.utils.exceptions import MissingTimezoneException
 from core.utils.walk import subclasses_of
 
@@ -130,14 +130,15 @@ class AtomicDBDict(dict[K, V]):
             raise NotImplementedError(f"Method '{name}' not supported in AtomicDBDict")
         return super().__getattribute__(name)
 
-    def __init__(self, items: Optional[Dict[K, V]] = None) -> None:
+    def __init__(self, items: Optional[Dict[K, V]] = None, tz: bool = False) -> None:
         super().__init__()
         self.lock = threading.Lock()
+        self.tz = tz
         super().update(items or {})
 
     def __getitem__(self, key: K) -> V:
         with self.lock:
-            if not super().__contains__(key):
+            if self.tz and not super().__contains__(key):
                 raise MissingTimezoneException()
             return super().__getitem__(key)
 
@@ -158,6 +159,11 @@ class AtomicDBDict(dict[K, V]):
 
     def keys(self):
         return super().keys()
+
+    async def async_lambda(self, call: Callable[[K, V], Awaitable[None]]) -> None:
+        with self.lock:
+            for k, v in self.items():
+                await call(k, v)
 
 
 class DataHandler:
@@ -181,7 +187,7 @@ class DataHandler:
             [
                 x
                 for subcls in subclasses_of(Task)
-                if hasattr(subcls, "__tablename__")
+                if hasattr(subcls, "__tablename__") and subcls != Wakeup
                 for x in (session.query(subcls)).all()
             ]
         )
@@ -189,10 +195,13 @@ class DataHandler:
             session.query(AlertChannel).all()
         )
         self.timezones: AtomicDBDict[int, Timezone] = AtomicDBDict(
-            {cast(int, tz._id): tz for tz in session.query(Timezone).all()}
+            {cast(int, tz._id): tz for tz in session.query(Timezone).all()}, tz=True
         )
         self.user_tasks: AtomicDBList[UserTask] = AtomicDBList(
             session.query(UserTask).all()
+        )
+        self.wakeup: AtomicDBDict[int, Wakeup] = AtomicDBDict(
+            {cast(int, wakeup.user): wakeup for wakeup in session.query(Wakeup).all()}
         )
 
     def __setattr__(self, __name: str, __value: Any) -> None:

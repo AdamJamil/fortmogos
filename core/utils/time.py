@@ -104,7 +104,7 @@ def logical_time_repr(stamp: Union[dt, Time], timezone: BaseTzInfo) -> str:
     """
     if isinstance(stamp, Time):
         stamp = replace_down(now(), "hour", stamp)
-    stamp = stamp.astimezone(timezone)
+    stamp = pytz.utc.localize(stamp.replace(tzinfo=None)).astimezone(timezone)
     res = stamp.strftime("%I%p") if not stamp.minute else stamp.strftime("%I:%M%p")
     return res[res[0] == "0" :]
 
@@ -193,3 +193,10 @@ def replace_down(
         res = res.replace(**{attr: 0 if zero else getattr(source_stamp, attr)})
 
     return res
+
+
+def tz_convert_time(t: Time, src_tz: BaseTzInfo, dst_tz: BaseTzInfo) -> Time:
+    ref_dt = now().replace(
+        hour=t.hour, minute=t.minute, second=t.second, microsecond=t.microsecond
+    )
+    return src_tz.localize(ref_dt).astimezone(dst_tz).time()

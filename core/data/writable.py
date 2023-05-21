@@ -1,5 +1,5 @@
 from abc import abstractmethod
-from datetime import datetime as dt, timedelta
+from datetime import datetime as dt, timedelta, time as Time
 from math import ceil
 from typing import Any, Dict, cast
 
@@ -7,7 +7,7 @@ import discord
 import pytz
 from core.timer import now
 from core.utils.exceptions import MissingTimezoneException
-from core.utils.time import logical_dt_repr, logical_time_repr, time_dist
+from core.utils.time import logical_dt_repr, logical_time_repr, replace_down, time_dist
 from core.utils.constants import client, todo_emoji
 from sqlalchemy import Boolean, Column, Float, Integer, String
 from sqlalchemy.orm import reconstructor  # type: ignore
@@ -408,3 +408,68 @@ class UserTask(Base):
         self.user_id = user_id
         self.desc = desc
         self.completed = False
+
+
+class Wakeup(RepeatableTask, Base):
+    """
+    When the user wants to see their todo list.
+    """
+
+    __tablename__ = "wakeup"
+
+    user = Column(Integer)
+    _time = Column(Integer)
+    channel = Column(Integer)
+    disabled = Column(Boolean)
+
+    def __init__(
+        self, user: int, wakeup_time: Time, channel: int, disabled: bool = False
+    ) -> None:
+        super(Wakeup, self).__init__()
+        self.user = user
+        self.time = wakeup_time
+        self._time = wakeup_time.hour * 3600 + wakeup_time.minute * 60
+        self.channel = channel
+        self.disabled = disabled
+
+    @reconstructor
+    def init_on_load(self) -> None:
+        super(Wakeup, self).init_on_load()
+        self.time = Time(
+            hour=cast(int, self._time) // 3600, minute=cast(int, self._time) % 60
+        )
+
+    async def activate(self) -> None:
+        if cast(bool, self.disabled):
+            return
+
+        from core.bot import data
+
+        todo_str = "\n".join(
+            f"{i+1}) {cast(str, y.desc)}"
+            for i, y in enumerate(
+                x for x in data.user_tasks if cast(int, x.user_id) == self.user
+            )
+        )
+
+        if todo_str:
+            await client.get_partial_messageable(cast(int, self.channel)).send(
+                f"Good morning, <@{self.user}>! Here is your current todo list:\n```\n"
+                + todo_str
+                + "\n```"
+            )
+
+    def get_next_activation(self, curr_time: dt) -> dt:
+        res = replace_down(curr_time, "hour", self.time)
+        if res + self._activation_threshold < curr_time:
+            res += timedelta(days=1)
+        return res
+
+    def soon_past_activation(self, curr_time: dt) -> bool:
+        next_activation = self.get_next_activation(curr_time)
+        prev_activation = next_activation - timedelta(days=1)
+        return (
+            timedelta()
+            <= time_dist(prev_activation.time(), curr_time.time())
+            <= self._activation_threshold
+        )

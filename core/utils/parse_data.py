@@ -48,7 +48,7 @@ def list_reminders(data: DataHandler, user_id: int) -> str:
         reminder_strs = (
             (
                 "  "
-                + logical_time_repr(reminder_time, data.timezones[user_id].tz)
+                + logical_time_repr(reminder_time, pytz.utc)
                 + (" " + reminder.descriptor_tag).rstrip()
                 + ": "
                 + cast(str, reminder.msg)

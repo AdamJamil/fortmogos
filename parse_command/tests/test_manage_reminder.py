@@ -38,7 +38,7 @@ class TestManageReminder(Test):
             response.content,
             (
                 "Hey <@1074389982095089664>, your daily reminder"
-                " at 12PM to wake up was deleted."
+                " at 8AM to wake up was deleted."
             ),
         )
 

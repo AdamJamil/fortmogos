@@ -11,14 +11,12 @@ from typing import Any, Dict, List
 from datetime import datetime as dt
 from unittest.mock import MagicMock, patch
 
-from core.data.writable import Timezone
 
 from core.utils.constants import (
     TEST_TOKEN,
     get_test_channel,
     test_client,
     sep,
-    testmogus_id,
 )
 from tests.utils import query_channel, reset_data, mock_get_token
 from core.bot import start as start_bot, data
@@ -62,9 +60,6 @@ class TestRunner:
         while not hasattr(data, "timezones"):
             await asyncio.sleep(0.4)
 
-        data.timezones.clear()
-        data.timezones[testmogus_id] = Timezone(testmogus_id, "US/Eastern")
-
         await asyncio.sleep(1)
         if (await query_channel("With a hey, ho", get_test_channel()))[
             1
@@ -72,6 +67,10 @@ class TestRunner:
             green("Successfully linked bots.")
         else:
             red("Impostor")
+
+        reset_data()
+
+        # await asyncio.sleep(10**20)
 
         ok, tot = 0, 0
 

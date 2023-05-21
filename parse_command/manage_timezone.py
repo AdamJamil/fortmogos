@@ -82,7 +82,7 @@ async def manage_timezone(msg: discord.message.Message, data: DataHandler) -> No
         ) -> Tuple[float, Optional[BaseTzInfo]]:
             timezone = pytz.timezone(tz_name)
             user_tz_guess = timezone.localize(curr_time.replace(tzinfo=None))
-            res = abs((user_tz_guess - utc_now).total_seconds())
+            res = abs((user_tz_guess - utc_now).total_seconds()) % 86400
             return min(
                 best,
                 (res, timezone),

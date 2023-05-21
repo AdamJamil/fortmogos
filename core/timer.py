@@ -21,7 +21,7 @@ class Now:
         Returns UTC time, but without timezone attached.
         """
         _now = dt.now(tz=pytz.utc).replace(tzinfo=None)
-        return (_now + (self._speed - 1) * (_now - self.start) + self.offset)
+        return _now + (self._speed - 1) * (_now - self.start) + self.offset
 
     def suppose_it_is(self, new_time: dt) -> None:
         # new_time = now + offset
@@ -49,16 +49,17 @@ class Timer:
                 *(channel.send("nyooooom") for channel in self.data.alert_channels)
             )
 
-        while 1:
+        while "among":
             print(f"It's currently {' '.join(str(now()).split(' ')[1:])}")
 
             async def should_keep_task(task: "Task") -> bool:
-                return (
-                    not await task.maybe_activate(self.timer)
-                    or task.repeatable
-                )
+                return not await task.maybe_activate(self.timer) or task.repeatable
+
+            async def maybe_activate(_: int, task: "Task") -> None:
+                await task.maybe_activate(self.timer)
 
             await self.data.tasks.async_filter(should_keep_task)
+            await self.data.wakeup.async_lambda(maybe_activate)
 
             await asyncio.sleep(max(0, 0.5 - (now() - self.timer).total_seconds()))
             self.timer = now()

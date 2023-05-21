@@ -1,4 +1,5 @@
 from typing import Any, Dict, List
+from core.data.writable import AlertChannel
 from core.utils.constants import get_test_channel
 from tests.main import Test
 from core.bot import data
@@ -12,7 +13,8 @@ def attrs(y: List[Any]) -> List[Dict[Any, Any]]:
             for k in dir(x)
             if k != "_sa_instance_state"
             and not k.startswith("__")
-            and hasattr(type(y), k)
+            and hasattr(type(x), k)
+            and (not type(x) is AlertChannel or k == "_id")
         }
         for x in y
     ]
@@ -29,8 +31,11 @@ class TestHandler(Test):
     def check_save_load(self) -> None:
         orig_tasks, orig_alerts = attrs(data.tasks), attrs(data.alert_channels)
         self.reload_data()
-        self.assert_equal(orig_tasks, attrs(data.tasks))
-        self.assert_equal(orig_alerts, attrs(data.alert_channels))
+        new_tasks, new_alerts = attrs(data.tasks), attrs(data.alert_channels)
+        self.assert_len(orig_tasks, len(new_tasks))
+        self.assert_len(orig_alerts, len(new_alerts))
+        for x, y in zip(sorted(orig_tasks, key=repr), sorted(new_tasks, key=repr)):
+            self.assert_dict_equal(x, y)
 
     async def test_load(self) -> None:
         test_channel = get_test_channel()

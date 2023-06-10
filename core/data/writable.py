@@ -303,6 +303,12 @@ class PeriodicAlert(Alert, PeriodicTask, Base):
             )
             return f"your daily reminder at {time_str} to {self.msg}"
 
+        if (self.periodicity - timedelta(days=7)).total_seconds() <= 5:
+            time_str = logical_time_repr(
+                self.first_activation, data.timezones[cast(int, self.user)].tz
+            )
+            return f"your weekly reminder at {time_str} to {self.msg}"
+
         raise NotImplementedError(f"The periodicity {self.periodicity} is unknown.")
 
 

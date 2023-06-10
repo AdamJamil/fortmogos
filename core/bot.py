@@ -109,6 +109,7 @@ async def on_message(msg: Message):
             exec(msg.content[6:-2])
         elif (
             msg.content.startswith("daily ")
+            or msg.content.startswith("weekly ")
             or msg.content.startswith("in ")
             or manage_reminder_check(msg)
             or msg.content.startswith("task ") or msg.content.startswith("todo ")

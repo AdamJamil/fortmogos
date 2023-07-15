@@ -18,32 +18,55 @@ def parse_duration(
     """
     Takes in a UTC time and returns that time plus the duration in question.
     """
-    valid_fmts = (
-        "A valid duration is written with no spaces, and alternates "
-        'between numbers and units of time (e.g. "2d1h5s").'
-    )
     ptr = 0
-    time_map = {"s": 1, "m": 60, "h": 3600, "d": 86400}
+    time_map = {"s": 1, "m": 60, "h": 3600, "d": 86400, "w": 86400 * 7}
+    inv_alias_map = {
+        "s": ("second", "sec"),
+        "m": ("minute", "min"),
+        "h": ("hour", "hr"),
+        "d": ("day"),
+        "w": ("week", "wk"),
+        "n": ("month"),
+        "y": ("year", "yr"),
+    }
+    alias_map = {
+        v + plur: k for k, _v in inv_alias_map.items() for v in _v for plur in ("", "s")
+    }
+    alias_map.update({k: k for k in inv_alias_map.keys()})
+
     while ptr < len(duration_string):
+        if duration_string[ptr].isspace():
+            ptr += 1
+            continue
+
         cur = 0
+        any_num = False
         while ptr < len(duration_string) and duration_string[ptr].isnumeric():
             cur = 10 * cur + int(duration_string[ptr])
             ptr += 1
-        if ptr == len(duration_string):
-            return f"Couldn't find units for last time quantity `{cur}`. " + valid_fmts
-        if duration_string[ptr] not in ["y", "n", "m", "h", "d", "s"]:
-            return (
-                f"Found character `{duration_string[ptr]}` which "
-                "isn't a valid unit of time. "
-                'The options are "y", "n" (month), "d", "h", "m", "s".'
-            )
-        if duration_string[ptr] in time_map:
-            curr_time += timedelta(seconds=cur) * time_map[duration_string[ptr]]
-        elif duration_string[ptr] in ["n", "y"]:
+            any_num = True
+
+        if not any_num:
+            return f"Didn't find a numerical value at character {duration_string[ptr]}."
+
+        unit = ""
+        while ptr < len(duration_string) and duration_string[ptr].isalpha():
+            unit += duration_string[ptr]
+            ptr += 1
+
+        if not unit:
+            return f"Didn't find a time unit corresponding to the value {cur}."
+        if unit not in alias_map:
+            return f"{unit} is not a valid unit of time."
+
+        unit = alias_map[unit]
+
+        if unit in time_map:
+            curr_time += timedelta(seconds=cur) * time_map[unit]
+        else:
             curr_time += relativedelta(
-                months=cur * (12 if duration_string[ptr] == "y" else 1)
+                months=cur * (12 if unit == "y" else 1)
             )
-        ptr += 1
     return curr_time
 
 
@@ -151,7 +174,7 @@ def relative_day_str(stamp: Union[dt, Time], timezone: BaseTzInfo) -> str:
     return "Today"
 
 
-T = TypeVar("T", bound=Union[dt, Time])
+T = TypeVar("T", dt, Time)
 
 
 def replace_down(

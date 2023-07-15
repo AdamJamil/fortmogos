@@ -13,16 +13,16 @@ from typing import (
     Tuple,
     TypeVar,
     cast,
+    overload,
 )
 import discord
-from core.data.base import Base
 from core.data.db import session
 from core.data.writable import Alert, AlertChannel, Task, Timezone, UserTask, Wakeup
 from core.utils.exceptions import MissingTimezoneException
 from core.utils.walk import subclasses_of
+from custom_typing.protocols import Writable
 
-T = TypeVar("T", bound=Base)
-K, V = TypeVar("K"), TypeVar("V", bound=Base)
+T = TypeVar("T", bound=Writable | Task)
 
 
 class DBLock:
@@ -111,12 +111,27 @@ class AtomicDBList(list[T]):
                 super().pop()
             session.commit()
 
-    def __setitem__(self, index: int, item: T) -> None:
+    @overload
+    def __setitem__(self, index: SupportsIndex, item: T) -> None:
+        ...
+
+    @overload
+    def __setitem__(self, index: slice, item: Iterable[T]) -> None:
+        ...
+
+    def __setitem__(self, index, item) -> None:
         with self.lock:
-            self.session.delete(self[index])
-            self[index] = item
-            session.add(item)
-            session.commit()
+            if isinstance(index, slice):
+                raise TypeError("why")
+            else:
+                self.session.delete(self[index])
+                self[index] = item
+                session.add(item)
+                session.commit()
+
+
+K = TypeVar("K")
+V = TypeVar("V", bound=Writable)
 
 
 class AtomicDBDict(dict[K, V]):
@@ -167,7 +182,7 @@ class AtomicDBDict(dict[K, V]):
 
 
 class DataHandler:
-    _instance = None
+    _instance: Optional["DataHandler"] = None
 
     def __new__(cls, client: discord.Client):
         if cls._instance is None:

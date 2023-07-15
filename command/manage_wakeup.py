@@ -4,10 +4,12 @@ from typing import cast
 from datetime import time as Time
 import discord
 import pytz
+from pytz import utc
 
 from core.data.handler import DataHandler
 from core.data.writable import Wakeup
-from core.utils.time import logical_time_repr, parse_time, tz_convert_time
+from core.timer import now
+from core.utils.time import logical_time_repr, replace_down, tz_convert_time
 from core.utils.constants import client
 
 
@@ -37,28 +39,6 @@ async def init_wakeup(user: int, channel: int, data: DataHandler) -> None:
         "`wakeup disable` shuts it up.\n"
     )
     data.wakeup[user] = Wakeup(user, default_wakeup(user, data), channel)
-
-
-async def parse_wakeup(msg: discord.message.Message, data: DataHandler) -> None:
-    if msg.content == "wakeup disable":
-        await disable(msg, data)
-    elif msg.content == "wakeup enable":
-        await enable(msg, data)
-    elif msg.content == "wakeup set":
-        await set_channel(msg, data)
-    elif isinstance(
-        (
-            new_wakeup := parse_time(
-                msg.content.split(" ")[1], data.timezones[msg.author.id].tz
-            )
-        ),
-        str,
-    ):
-        await msg.reply(
-            f"Fuck you, <@{msg.author.id}>! " f"Your command failed: {new_wakeup}"
-        )
-    else:
-        await change_wakeup_time(msg, new_wakeup, data)
 
 
 async def enable(msg: discord.message.Message, data: DataHandler) -> None:
@@ -126,8 +106,12 @@ async def set_channel(msg: discord.message.Message, data: DataHandler) -> None:
 
 
 async def change_wakeup_time(
-    msg: discord.message.Message, new_wakeup: Time, data: DataHandler
+    msg: discord.message.Message,
+    data: DataHandler,
+    new_wakeup: Time,
 ) -> None:
+    tz = data.timezones[msg.author.id].tz
+    new_wakeup = tz_convert_time(new_wakeup, tz, utc)
     user = msg.author.id
     if user not in data.wakeup:
         data.wakeup[user] = Wakeup(user, new_wakeup, msg.channel.id)
@@ -141,7 +125,6 @@ async def change_wakeup_time(
         data.wakeup[user] = Wakeup(
             user, new_wakeup, cast(int, data.wakeup[user].channel)
         )
-        print(new_wakeup)
         user_time = logical_time_repr(new_wakeup, data.timezones[user].tz)
         await msg.reply(f"Got it, <@{user}>, your wakeup time was set to {user_time}.")
         await msg.delete()

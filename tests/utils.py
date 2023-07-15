@@ -1,10 +1,13 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, Tuple
 from unittest.mock import MagicMock
+
+from pytz import utc
 from core.data.writable import Timezone, Wakeup
+from core.timer import now
 from core.utils.constants import fakemogus_id, testmogus_id, FAKE_TOKEN, test_channel_id
 from core.utils.message import last_msg, next_msg
-from datetime import time as Time
+from datetime import time as Time, datetime as dt
 
 if TYPE_CHECKING:
     from discord import PartialMessageable
@@ -12,6 +15,9 @@ if TYPE_CHECKING:
 
 
 def reset_data() -> None:
+    now.suppose_it_is(dt.now(tz=utc).replace(tzinfo=None))
+    now.set_speed(1)
+
     from core.bot import data
 
     data.alert_channels.clear()

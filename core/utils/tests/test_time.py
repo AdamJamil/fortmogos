@@ -19,14 +19,11 @@ class TestTimeUtils(Test):
 
         self.assert_equal(
             parse_duration("23", ref),
-            "Couldn't find units for last time quantity "
-            "`23`. A valid duration is written with no spaces, and alternates between "
-            'numbers and units of time (e.g. "2d1h5s").',
+            "Didn't find a time unit corresponding to the value 23.",
         )
         self.assert_equal(
             parse_duration("23g", ref),
-            "Found character `g` which isn't a valid unit"
-            ' of time. The options are "y", "n" (month), "d", "h", "m", "s".',
+            "g is not a valid unit of time.",
         )
 
     async def test_parse_time(self) -> None:

@@ -4,18 +4,36 @@ import asyncio
 import traceback
 from typing import TYPE_CHECKING, Any, List, Union
 from discord import Member, Reaction, User
+from command.misc import hijack, respond_test, subscribe_alerts
 
 from core.data.handler import DataHandler
 from core.data.writable import AlertChannel
+from core.utils.arg_parse import (
+    NO_TZ,
+    ArgParser,
+    DurationExpr,
+    KleeneStar,
+    Literal,
+    Num,
+    TimeExpr,
+    TimeZoneExpr,
+)
 from core.utils.color import green, red
+from core.utils.constants import warning_emoji
 from core.utils.exceptions import MissingTimezoneException
-from parse_command.manage_wakeup import init_wakeup, parse_wakeup
-from parse_command.manage_reaction import manage_reaction
-from parse_command.help import get_help
-from parse_command.manage_reminder import manage_reminder
-from parse_command.manage_task import add_task, delete_task, show_tasks
-from parse_command.manage_timezone import manage_timezone
-from parse_command.set_reminder import set_reminder
+from command.manage_wakeup import (
+    change_wakeup_time,
+    disable,
+    enable,
+    init_wakeup,
+    set_channel,
+)
+from command.manage_reaction import manage_reaction
+from command.help import help_reminder
+from command.manage_reminder import delete_reminder, show_reminders
+from command.manage_task import add_task, delete_task, show_tasks
+from command.manage_timezone import manage_timezone
+from command.set_reminder import set_daily, set_in
 from core.utils.constants import get_token, sep, client
 from core.timer import Timer
 
@@ -39,9 +57,6 @@ async def on_ready():
     data.populate_data()
 
 
-help_messages = []
-
-
 async def alert_shutdown(channels: List[AlertChannel]):
     await asyncio.gather(*(channel.send("zzz") for channel in channels))
 
@@ -56,18 +71,40 @@ def shutdown() -> None:
         green("Sent channel alerts.")
 
 
-def manage_reminder_check(msg: Message):
-    return (
-        msg.content
-        in [
-            "list reminders",
-            "show reminders",
-            "see reminders",
-            "view reminders",
-        ]
-        or msg.content.startswith("delete reminder ")
-        or msg.content.startswith("remove reminder ")
-    )
+SHOW = ("list", "show", "see", "view")
+DELETE = ("delete", "remove")
+TASKS = ("task", "tasks", "todo", "todos")
+REMINDERS = ("reminder", "reminders")
+
+arg_parser = ArgParser(
+    NO_TZ() >> Literal("help reminder") >> help_reminder,
+    NO_TZ() >> Literal("timezone") >> TimeZoneExpr() >> manage_timezone,
+    NO_TZ() >> Literal("subscribe alerts") >> subscribe_alerts,
+    NO_TZ() >> Literal("With a hey, ho") >> respond_test,
+    Literal(SHOW, TASKS) >> show_tasks,
+    Literal(DELETE, TASKS) >> Num() >> delete_task,
+    Literal(SHOW, REMINDERS) >> show_reminders,
+    Literal(DELETE, REMINDERS) >> Num() >> delete_reminder,
+    Literal("exec") >> KleeneStar() >> hijack,
+    Literal(TASKS) >> KleeneStar() >> add_task,
+    Literal("wakeup disable") >> disable,
+    Literal("wakeup enable") >> enable,
+    Literal("wakeup set") >> set_channel,
+    Literal("wakeup") >> TimeExpr() >> change_wakeup_time,
+)
+
+# mypy has a stroke when chaining more than one Expr1...
+daily_cmd: Any = Literal("daily") >> TimeExpr()
+shit: Any = KleeneStar()
+daily_cmd >>= shit
+daily_cmd >>= set_daily
+
+in_cmd: Any = Literal("in") >> DurationExpr()
+shit2: Any = KleeneStar()
+in_cmd >>= shit2
+in_cmd >>= set_in
+
+arg_parser.commands.extend((daily_cmd, in_cmd))
 
 
 @client.event
@@ -75,61 +112,21 @@ async def on_message(msg: Message):
     if msg.author.id in (1061719682773688391, 1089042918259564564):
         return
     try:
-        channel = msg.channel.id
-        if msg.content == "With a hey, ho":
-            await msg.reply(":notes: the wind and the rain :notes:")
-            return
-        elif msg.content.startswith("help "):
-            await get_help(msg)
-        elif msg.content.startswith("timezone "):
-            await manage_timezone(msg, data)
-        elif msg.content == "subscribe alerts":
-            await msg.reply(
-                f"Got it, <@{msg.author.id}>. This channel will now be used "
-                "to send alerts out regarding the state of the bot."
-            )
-            data.alert_channels.append(AlertChannel(msg.channel))
-            await msg.delete()
-        elif msg.content in [
-            "list tasks",
-            "show tasks",
-            "see tasks",
-            "view tasks",
-            "list todo",
-            "show todo",
-            "see todo",
-            "view todo",
-        ]:
-            await show_tasks(msg, data)
-        elif msg.content.startswith("delete task ") or msg.content.startswith(
-            "delete todo "
-        ):
-            await delete_task(msg, data)
-        elif msg.content.startswith("exec"):
-            exec(msg.content[6:-2])
-        elif (
-            msg.content.startswith("daily ")
-            or msg.content.startswith("in ")
-            or manage_reminder_check(msg)
-            or msg.content.startswith("task ") or msg.content.startswith("todo ")
-            or msg.content.startswith("wakeup ")
-        ):
-            if msg.author.id not in data.timezones.keys():
-                raise MissingTimezoneException()
-            if manage_reminder_check(msg):
-                await manage_reminder(msg, data)
-            elif msg.content.startswith("task ") or msg.content.startswith("todo "):
-                await add_task(msg, data)
-            elif msg.content.startswith("wakeup "):
-                await parse_wakeup(msg, data)
-            else:
-                await set_reminder(msg, data, client)
+        parsed_command = arg_parser.parse_message(msg.content)
+
+        if parsed_command.needs_tz and msg.author.id not in data.timezones.keys():
+            raise MissingTimezoneException()
+
+        if isinstance(parsed_command.res, list):  # warning
+            await msg.add_reaction(warning_emoji)
+            await msg.reply(parsed_command.res[0])
+        elif isinstance(parsed_command.res, tuple):  # args
+            await parsed_command.f(msg, data, *parsed_command.res)
 
         if msg.author.id not in data.wakeup and any(
             todo.user_id == msg.author.id for todo in data.user_tasks
         ):
-            await init_wakeup(msg.author.id, channel, data)
-
+            await init_wakeup(msg.author.id, msg.channel.id, data)
     except MissingTimezoneException as e:
         await msg.reply(e.help)
     except Exception as e:

@@ -2,8 +2,8 @@
     "python.linting.enabled": true,
     "python.linting.pylintEnabled": false,
     "python.linting.pylintArgs": [
-        "--init-hook",
-        // "import sys; sys.path.insert(0, './core'); sys.path.insert(0, './parse_command'); sys.path.insert(0, './test')"
+        "--init-hook"
+        // "import sys; sys.path.insert(0, './core'); sys.path.insert(0, './command'); sys.path.insert(0, './test')"
     ],
     "python.linting.flake8Enabled": true,
     "python.linting.flake8Args": [
@@ -16,4 +16,10 @@
         "reportImportCycles": "none",
         "reportPrivateUsage": "none",
     },
+    "python.linting.ignorePatterns": [
+        "venv/**/*.py"
+    ],
+    "python.linting.mypyArgs": [
+        "--enable-incomplete-feature=TypeVarTuple",
+    ]
 }

@@ -8,7 +8,6 @@ import os
 import sys
 import traceback
 from typing import Any, Dict, List
-from datetime import datetime as dt
 from unittest.mock import MagicMock, patch
 
 
@@ -20,7 +19,6 @@ from core.utils.constants import (
 )
 from tests.utils import query_channel, reset_data, mock_get_token
 from core.bot import start as start_bot, data
-from core.timer import now
 from core.utils.color import green, red, yellow
 from custom_typing.protocols import Color, Measureable
 
@@ -91,8 +89,6 @@ class TestRunner:
                         green(f"[✓] Passed {attr}.")
                         ok += 1
                     tot += 1
-
-                    now.suppose_it_is(dt.now())
 
         color: Color = green if ok == tot else red
         color(f"Passed {ok}/{tot} tests.")

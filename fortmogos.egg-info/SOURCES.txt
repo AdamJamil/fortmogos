@@ -1,5 +1,14 @@
 pyproject.toml
 setup.py
+command/__init__.py
+command/help.py
+command/manage_reaction.py
+command/manage_reminder.py
+command/manage_task.py
+command/manage_timezone.py
+command/manage_wakeup.py
+command/misc.py
+command/set_reminder.py
 core/__init__.py
 core/bot.py
 core/timer.py
@@ -9,8 +18,10 @@ core/data/db.py
 core/data/handler.py
 core/data/writable.py
 core/utils/__init__.py
+core/utils/arg_parse.py
 core/utils/color.py
 core/utils/constants.py
+core/utils/exceptions.py
 core/utils/message.py
 core/utils/parse_data.py
 core/utils/time.py
@@ -21,10 +32,6 @@ fortmogos.egg-info/PKG-INFO
 fortmogos.egg-info/SOURCES.txt
 fortmogos.egg-info/dependency_links.txt
 fortmogos.egg-info/top_level.txt
-parse_command/__init__.py
-parse_command/help.py
-parse_command/manage_reminder.py
-parse_command/set_reminder.py
 tests/__init__.py
 tests/main.py
 tests/utils.py

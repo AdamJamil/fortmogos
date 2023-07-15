@@ -14,3 +14,7 @@ class Measureable(Protocol):
 class Str_able(Protocol):
     def __str__(self) -> str:
         ...
+
+
+class Writable(Protocol):
+    __tablename__: str

@@ -4,8 +4,7 @@ from core.data.writable import UserTask
 from core.data.handler import DataHandler
 
 
-async def add_task(msg: discord.message.Message, data: DataHandler) -> None:
-    desc = " ".join(msg.content.split(" ")[1:])
+async def add_task(msg: discord.message.Message, data: DataHandler, desc: str) -> None:
     data.user_tasks.append(UserTask(msg.author.id, desc))
     await msg.reply(
         f"Your task to `{desc}` was added to your list. Try `see tasks` to view it."
@@ -28,15 +27,16 @@ async def show_tasks(msg: discord.message.Message, data: DataHandler) -> None:
     await msg.delete()
 
 
-async def delete_task(msg: discord.message.Message, data: DataHandler) -> None:
-    idx = int(msg.content.split(" ")[2])
+async def delete_task(
+    msg: discord.message.Message, data: DataHandler, index: int
+) -> None:
     user_tasks = [x for x in data.user_tasks if cast(int, x.user_id) == msg.author.id]
-    if idx <= 0 or idx > len(user_tasks):
+    if index <= 0 or index > len(user_tasks):
         await msg.reply(f"Hey <@{msg.author.id}>, you're an idiot :D")
     else:
-        data.user_tasks.remove(user_tasks[idx - 1])
+        data.user_tasks.remove(user_tasks[index - 1])
         await msg.reply(
             f"Hey <@{msg.author.id}>, your task "
-            f"`{user_tasks[idx - 1].desc}` was deleted."
+            f"`{user_tasks[index - 1].desc}` was deleted."
         )
     await msg.delete()

@@ -139,9 +139,9 @@ class PeriodicTask(RepeatableTask):
     ) -> None:
         super().__init__(**kwargs)
         self.periodicity = periodicity
-        self._periodicity = periodicity.total_seconds()
+        self._periodicity = periodicity.total_seconds()  # type: ignore
         self.first_activation = first_activation
-        self._first_activation = first_activation.timestamp()
+        self._first_activation = first_activation.timestamp()  # type: ignore
 
     @reconstructor
     def init_on_load(self) -> None:
@@ -177,12 +177,12 @@ class SingleTask(Task):
 
     __abstract__ = True
 
-    _activation = Column[float](Float)
+    _activation = Column(Float(40))
 
     def __init__(self, activation: dt) -> None:
         super(SingleTask, self).__init__()
         self.activation = activation
-        self._activation = activation.timestamp()
+        self._activation = activation.timestamp()  # type: ignore
 
     @reconstructor
     def init_on_load(self) -> None:
@@ -210,6 +210,9 @@ class Alert(Task):
     user = Column(Integer)
     channel_id = Column(Integer)
     descriptor_tag = Column(String)
+    _reminder_str: str = (
+        "Hey <@{user}>, this is a reminder to {msg}. It's currently {x}."
+    )
 
     def __init__(
         self,
@@ -224,16 +227,10 @@ class Alert(Task):
         self.user = user
         self.channel_id = channel_id
         self.descriptor_tag = descriptor_tag
-        self._reminder_str: str = (
-            "Hey <@{user}>, this is a reminder to {msg}. It's currently {x}."
-        )
 
     @reconstructor
     def init_on_load(self) -> None:
         super().init_on_load()
-        self._reminder_str: str = (
-            "Hey <@{user}>, this is a reminder to {msg}. It's currently {x}."
-        )
 
     async def activate(self) -> None:
         """

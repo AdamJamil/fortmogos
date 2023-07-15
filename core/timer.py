@@ -14,7 +14,7 @@ class Now:
     def __init__(self) -> None:
         self.start = dt.now(tz=pytz.utc).replace(tzinfo=None)
         self.offset: timedelta = timedelta()
-        self._speed = 1
+        self._speed: float = 1
 
     def __call__(self) -> dt:
         """

@@ -127,8 +127,8 @@ async def on_message(msg: Message):
             todo.user_id == msg.author.id for todo in data.user_tasks
         ):
             await init_wakeup(msg.author.id, msg.channel.id, data)
-    except MissingTimezoneException as e:
-        await msg.reply(e.help)
+    except MissingTimezoneException:
+        await msg.add_reaction(warning_emoji)
     except Exception as e:
         red(f"Wtf:\n{e}\n{traceback.format_exc()}")
         await msg.reply(f"Something broke:\n{e}\n{traceback.format_exc()}")
@@ -142,12 +142,13 @@ async def on_reaction_add(reaction: Reaction, user: Union[Member, User]):
         async for user in reaction.users():
             if user.id in (1061719682773688391, 1089042918259564564):
                 await reaction.message.remove_reaction(warning_emoji, user)
-                await reaction.message.reply(
-                    cast(
-                        List[Warn],
-                        arg_parser.parse_message(reaction.message.content).res,
-                    )[0],
-                )
+                parsed_command = arg_parser.parse_message(reaction.message.content)
+                if parsed_command.needs_tz and user.id not in data.timezones.keys():
+                    await reaction.message.reply(MissingTimezoneException().help)
+                else:
+                    await reaction.message.reply(
+                        cast(List[Warn], parsed_command.res)[0],
+                    )
                 break
 
     if user.id not in data.wakeup and any(

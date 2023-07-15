@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import traceback
-from typing import TYPE_CHECKING, Any, List, Union
+from typing import TYPE_CHECKING, Any, List, Union, cast
 from discord import Member, Reaction, User
 from command.misc import hijack, respond_test, subscribe_alerts
 
@@ -17,6 +17,7 @@ from core.utils.arg_parse import (
     Num,
     TimeExpr,
     TimeZoneExpr,
+    Warn,
 )
 from core.utils.color import green, red
 from core.utils.constants import warning_emoji
@@ -119,7 +120,6 @@ async def on_message(msg: Message):
 
         if isinstance(parsed_command.res, list):  # warning
             await msg.add_reaction(warning_emoji)
-            await msg.reply(parsed_command.res[0])
         elif isinstance(parsed_command.res, tuple):  # args
             await parsed_command.f(msg, data, *parsed_command.res)
 
@@ -138,6 +138,17 @@ async def on_message(msg: Message):
 async def on_reaction_add(reaction: Reaction, user: Union[Member, User]):
     if str(user.id) in reaction.message.content:
         await manage_reaction(reaction, user, data)
+    elif user.id == reaction.message.author.id and str(reaction.emoji) == warning_emoji:
+        async for user in reaction.users():
+            if user.id in (1061719682773688391, 1089042918259564564):
+                await reaction.message.remove_reaction(warning_emoji, user)
+                await reaction.message.reply(
+                    cast(
+                        List[Warn],
+                        arg_parser.parse_message(reaction.message.content).res,
+                    )[0],
+                )
+                break
 
     if user.id not in data.wakeup and any(
         todo.user_id == user.id for todo in data.user_tasks

@@ -8,8 +8,7 @@ from pytz import utc
 
 from core.data.handler import DataHandler
 from core.data.writable import Wakeup
-from core.timer import now
-from core.utils.time import logical_time_repr, replace_down, tz_convert_time
+from core.utils.time import logical_time_repr, tz_convert_time
 from core.utils.constants import client
 
 

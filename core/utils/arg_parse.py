@@ -339,13 +339,13 @@ class DurationExpr(Expr1[dt]):
 
         if best[0] == -1:
             first = x.popleft()
-            if not first.isnumeric():
+            if not first[0].isnumeric():
                 return None
             if not first.isnumeric():  # this maybe has units; try to parse them
-                return Warn(parse_duration(x[0], curr_time))
+                return Warn(parse_duration(first, curr_time))
             # first is definitely a number now
-            if len(x) == 1:
-                return Warn(f"Didn't find a time unit after `{x[0]}`")
+            if not len(x):
+                return Warn(f"Didn't find a time unit after `{first}`")
             # at least two tokens, first one is a number, second should've be a unit
             # (or more), however this must've failed as best is -1
             return Warn(parse_duration(first + x.popleft(), curr_time))

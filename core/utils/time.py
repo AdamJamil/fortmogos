@@ -2,6 +2,7 @@ from datetime import datetime as dt, time as Time, timedelta
 from typing import (
     Dict,
     Optional,
+    Tuple,
     TypeVar,
     Union,
 )
@@ -20,17 +21,20 @@ def parse_duration(
     """
     ptr = 0
     time_map = {"s": 1, "m": 60, "h": 3600, "d": 86400, "w": 86400 * 7}
-    inv_alias_map = {
+    inv_alias_map: Dict[str, Tuple[str, ...]] = {
         "s": ("second", "sec"),
         "m": ("minute", "min"),
         "h": ("hour", "hr"),
-        "d": ("day"),
+        "d": ("day",),
         "w": ("week", "wk"),
-        "n": ("month"),
+        "n": ("month",),
         "y": ("year", "yr"),
     }
     alias_map = {
-        v + plur: k for k, _v in inv_alias_map.items() for v in _v for plur in ("", "s")
+        alias + plur: one_char
+        for one_char, aliases in inv_alias_map.items()
+        for alias in aliases
+        for plur in ("", "s")
     }
     alias_map.update({k: k for k in inv_alias_map.keys()})
 
@@ -55,18 +59,16 @@ def parse_duration(
             ptr += 1
 
         if not unit:
-            return f"Didn't find a time unit corresponding to the value {cur}."
+            return f"Didn't find a time unit corresponding to the value `{cur}`."
         if unit not in alias_map:
-            return f"{unit} is not a valid unit of time."
+            return f"`{unit}` is not a valid unit of time."
 
         unit = alias_map[unit]
 
         if unit in time_map:
             curr_time += timedelta(seconds=cur) * time_map[unit]
         else:
-            curr_time += relativedelta(
-                months=cur * (12 if unit == "y" else 1)
-            )
+            curr_time += relativedelta(months=cur * (12 if unit == "y" else 1))
     return curr_time
 
 

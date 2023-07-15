@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING, Tuple
+from typing import TYPE_CHECKING, List, Tuple
 from unittest.mock import MagicMock
 
 from pytz import utc
@@ -68,3 +68,12 @@ async def query_message_with_reaction(
     ), "Timed out waiting for response."
 
     return response
+
+
+class MockMessage:
+    def __init__(self, content: str) -> None:
+        self.content = content
+        self.replies: List[str] = []
+
+    async def reply(self, content: str) -> None:
+        self.replies.append(content)

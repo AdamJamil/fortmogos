@@ -143,7 +143,10 @@ async def on_reaction_add(reaction: Reaction, user: Union[Member, User]):
             if user.id in (1061719682773688391, 1089042918259564564):
                 await reaction.message.remove_reaction(warning_emoji, user)
                 parsed_command = arg_parser.parse_message(reaction.message.content)
-                if parsed_command.needs_tz and user.id not in data.timezones.keys():
+                if (
+                    parsed_command.needs_tz
+                    and reaction.message.author.id not in data.timezones.keys()
+                ):
                     await reaction.message.reply(MissingTimezoneException().help)
                 else:
                     await reaction.message.reply(

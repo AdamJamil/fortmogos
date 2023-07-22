@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from core.timer import Timer
 import difflib
 import importlib
 import asyncio
@@ -9,16 +10,12 @@ import sys
 import traceback
 from typing import Any, Dict, List
 from unittest.mock import MagicMock, patch
-
-
 from core.utils.constants import (
-    TEST_TOKEN,
-    get_test_channel,
     test_client,
     sep,
 )
-from tests.utils import query_channel, reset_data, mock_get_token
-from core.bot import start as start_bot, data
+from tests.utils import reset_data, mock_get_token, test_channel
+from core.bot import data
 from core.utils.color import green, red, yellow
 from custom_typing.protocols import Color, Measureable
 
@@ -50,22 +47,13 @@ class TestRunner:
         self.tests: List["TestMeta"] = []
 
     @patch("core.bot.get_token")
-    async def run(self, get_token: MagicMock):
+    @patch("core.data.writable.client.get_partial_messageable")
+    async def run(self, client: MagicMock, get_token: MagicMock):
+        data.populate_data()
         mock_get_token(get_token)
+        client.return_value = test_channel
 
         tests = load_test_classes()
-
-        while not hasattr(data, "timezones"):
-            await asyncio.sleep(0.4)
-
-        await asyncio.sleep(1)
-        if (await query_channel("With a hey, ho", get_test_channel()))[
-            1
-        ].content == ":notes: the wind and the rain :notes:":
-            green("Successfully linked bots.")
-        else:
-            red("Impostor")
-
         reset_data()
 
         # await asyncio.sleep(10**20)
@@ -154,6 +142,12 @@ class Test(metaclass=TestMeta):
                 f"Former str does not start with latter:\n{sep}\n{x}\n{sep}\n{y}\n{sep}"
             )
 
+    def assert_ends_with(self, x: str, y: str):
+        if not x.endswith(y):
+            raise AssertionError(
+                f"Former str does not end with latter:\n{sep}\n{x}\n{sep}\n{y}\n{sep}"
+            )
+
     def assert_len(self, x: Measureable, y: int):
         if not len(x) == y:
             raise AssertionError(
@@ -185,9 +179,7 @@ async def on_ready():
 
 async def start():
     try:
-        await asyncio.gather(
-            test_client.start(TEST_TOKEN), TestRunner().run(), start_bot()
-        )
+        await asyncio.gather(TestRunner().run(), Timer(data).run())
     except SystemExit:
         ...
 

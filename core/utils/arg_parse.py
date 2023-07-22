@@ -169,14 +169,12 @@ class Command:
         self.needs_tz = needs_tz
 
     def parse(self, msg: str) -> ParsedCommand:
-        # print("\n")
         while "  " in msg:
             msg = msg.replace("  ", " ")
         dq = deque(msg.split(" "))
         args: List[Any] = []
         warnings = []
         for expr in self.exprs:
-            # print(expr, dq)
             if not dq:
                 warnings.append(Warn("Ran out of tokens while parsing."))
                 break
@@ -186,13 +184,9 @@ class Command:
             elif isinstance(res, tuple):
                 args.extend(res)
             else:
-                # print("No match.")
                 return ParsedCommand(self.exprs, self.f, self.needs_tz, None)
-            # print(dq)
         if dq:
-            # print("extra tokens:", dq)
             warnings.append(Warn("Unexpected tokens after parsing."))
-        # print("result: ", warnings or tuple(args))
         return ParsedCommand(
             self.exprs,
             self.f,

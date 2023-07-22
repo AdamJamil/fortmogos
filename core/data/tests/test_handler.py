@@ -1,9 +1,8 @@
 from typing import Any, Dict, List
 from core.data.writable import AlertChannel
-from core.utils.constants import get_test_channel
 from tests.main import Test
 from core.bot import data
-from tests.utils import query_channel
+from tests.utils import user_says
 
 
 def attrs(y: List[Any]) -> List[Dict[Any, Any]]:
@@ -38,16 +37,14 @@ class TestHandler(Test):
             self.assert_dict_equal(x, y)
 
     async def test_load(self) -> None:
-        test_channel = get_test_channel()
-
-        _ = await query_channel("in 3d8h5m4s wake up", test_channel)
+        await user_says("in 3d8h5m4s wake up")
         self.check_save_load()
 
-        _ = await query_channel("in 3d8h5m4s wake up", test_channel)
+        await user_says("in 3d8h5m4s wake up")
         self.check_save_load()
 
-        _ = await query_channel("daily 10am wake up", test_channel)
+        await user_says("daily 10am wake up")
         self.check_save_load()
 
-        _ = await query_channel("subscribe alerts", test_channel)
+        await user_says("subscribe alerts")
         self.check_save_load()

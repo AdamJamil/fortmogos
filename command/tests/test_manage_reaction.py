@@ -1,30 +1,34 @@
-import asyncio
-from core.utils.constants import get_test_channel
-from core.utils.message import next_msg
+from core.timer import now
 from tests.main import Test
-
-from tests.utils import query_channel, query_message_with_reaction
-from core.utils.constants import fakemogus_id, todo_emoji, testmogus_id
+from datetime import timedelta
+from tests.utils import (
+    get_messages_at_time,
+    query_message_with_reaction,
+    user_says,
+)
+from core.utils.constants import todo_emoji, testmogus_id
 
 
 class TestManageReminder(Test):
     async def test_manage_reaction(self) -> None:
-        test_channel = get_test_channel()
+        await user_says("in 1s gamingos", expected_responses=1)
 
-        _, response = await query_channel("in 1s gamingos", test_channel)
+        now.suppose_it_is(now() + timedelta(seconds=1))
 
-        await asyncio.sleep(1.2)
-        assert (
-            alert := await next_msg(test_channel, fakemogus_id, is_not=response)
-        ), "Timed out waiting for response."
+        alert = await get_messages_at_time(
+            now() + timedelta(seconds=1), expected_messages=1
+        )
+
         self.assert_len(alert.reactions, 1)
         self.assert_equal(alert.reactions[0].emoji, todo_emoji)
 
-        update = await query_message_with_reaction(todo_emoji, alert, test_channel)
+        response = await query_message_with_reaction(
+            todo_emoji, alert, expected_messages=1
+        )
         self.assert_equal(
-            update.content,
+            response.content,
             (
-                f"Got it, <@{testmogus_id}>. Your reminder to gamingos "
-                "was added to your todo list."
+                f"Got it, <@{testmogus_id}>. Your reminder to gamingos was added to "
+                "your todo list."
             ),
         )

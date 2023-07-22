@@ -184,13 +184,12 @@ class AtomicDBDict(dict[K, V]):
 class DataHandler:
     _instance: Optional["DataHandler"] = None
 
-    def __new__(cls, client: discord.Client):
+    def __new__(cls):
         if cls._instance is None:
             cls._instance = super(DataHandler, cls).__new__(cls)
         return cls._instance
 
-    def __init__(self, client: discord.Client) -> None:
-        self.client = client
+    def __init__(self) -> None:
         self.reminder_msgs: Dict[Tuple[int, discord.Message], Alert] = {}
 
     def populate_data(self) -> None:

@@ -1,48 +1,45 @@
-import datetime
-from core.utils.constants import get_test_channel
+from core.timer import now
 from tests.main import Test
 
-from tests.utils import query_channel
-from core.bot import data
+from tests.utils import user_says
 from core.utils.constants import testmogus_id
 
 
 class TestManageReminder(Test):
     async def test_manage_reminders(self) -> None:
-        test_channel = get_test_channel()
-
-        _, _ = await query_channel("daily 8am wake up", test_channel)
-        _, response = await query_channel("see reminders", test_channel)
-        day = (
-            "Tomorrow"
-            if datetime.datetime.now(data.timezones[testmogus_id].tz).hour >= 8
-            else "Today"
-        )
+        response = await user_says("daily 8am wake up", expected_responses=1)
         self.assert_equal(
             response.content,
-            f"""Here are your reminders, <@1074389982095089664>.
+            f'<@{testmogus_id}>\'s daily reminder at 8AM to "wake up" has been set.',
+        )
+
+        now.suppose_it_is(now().replace(hour=13, minute=0, second=0))
+        response = await user_says("see reminders", expected_responses=1)
+        self.assert_equal(
+            response.content,
+            f"""Here are your reminders, <@{testmogus_id}>.
 ```
-{day}
+Tomorrow
   8AM [daily]: wake up
 
 ```""",
         )
 
-        _, response = await query_channel("delete reminder 2", test_channel)
+        response = await user_says("delete reminder 2", expected_responses=1)
         self.assert_equal(
-            response.content, "Hey <@1074389982095089664>, you're an idiot :D"
+            response.content, f"Hey <@{testmogus_id}>, you're an idiot :D"
         )
 
-        _, response = await query_channel("delete reminder 1", test_channel)
+        response = await user_says("delete reminder 1", expected_responses=1)
         self.assert_equal(
             response.content,
             (
-                "Hey <@1074389982095089664>, your daily reminder"
+                f"Hey <@{testmogus_id}>, your daily reminder"
                 " at 8AM to wake up was deleted."
             ),
         )
 
-        _, response = await query_channel("see reminders", test_channel)
+        response = await user_says("see reminders", expected_responses=1)
         self.assert_equal(
-            response.content, "You have no reminders, <@1074389982095089664>."
+            response.content, f"You have no reminders, <@{testmogus_id}>."
         )

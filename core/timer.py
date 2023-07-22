@@ -61,5 +61,5 @@ class Timer:
             await self.data.tasks.async_filter(should_keep_task)
             await self.data.wakeup.async_lambda(maybe_activate)
 
-            await asyncio.sleep(max(0, 0.5 - (now() - self.timer).total_seconds()))
+            await asyncio.sleep(max(0, 0.05 - (now() - self.timer).total_seconds()))
             self.timer = now()

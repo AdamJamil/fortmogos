@@ -19,11 +19,11 @@ class TestTimeUtils(Test):
 
         self.assert_equal(
             parse_duration("23", ref),
-            "Didn't find a time unit corresponding to the value 23.",
+            "Didn't find a time unit corresponding to the value `23`.",
         )
         self.assert_equal(
             parse_duration("23g", ref),
-            "g is not a valid unit of time.",
+            "`g` is not a valid unit of time.",
         )
 
     async def test_parse_time(self) -> None:

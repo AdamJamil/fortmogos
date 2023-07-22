@@ -1,10 +1,8 @@
-from core.utils.constants import get_test_channel
 from tests.main import Test
-from tests.utils import query_channel
+from tests.utils import user_says
 
 
 class TestHelp(Test):
     async def test_help(self) -> None:
-        _, response = await query_channel("help reminder", get_test_channel())
-
+        response = await user_says("help reminder", expected_responses=1)
         self.assert_geq(len(response.content.split("\n")), 15)

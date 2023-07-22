@@ -1,21 +1,26 @@
 from core.bot import data
-from core.timer import now
-from core.utils.constants import get_test_channel
-from core.utils.message import next_msg
 from tests.main import Test
-
-from tests.utils import query_channel
-from core.utils.constants import testmogus_id, fakemogus_id
+from datetime import time as Time
+from tests.utils import get_messages_at_time, user_says
+from core.utils.constants import testmogus_id
 
 
 class TestManageWakeup(Test):
     async def test_manage_wakeup(self) -> None:
-        data.wakeup.clear()
+        data.wakeup.clear()  # wakeup is set at the beginning of all testse
 
-        test_channel = get_test_channel()
-
-        _, _ = await query_channel("todo gamine", test_channel)
-        _, response = await query_channel("wakeup 8am", test_channel)
+        responses = await user_says("todo gamine", expected_responses=2)
+        self.assert_equal(
+            {responses[0].content, responses[1].content},
+            {
+                "Your task to `gamine` was added to your list. "
+                "Try `see tasks` to view it.",
+                "Daily pings with your todo list will appear here, <@0>!\n"
+                "`wakeup <time>` changes the time, `wakeup set` resets the channel, "
+                "and `wakeup disable` shuts it up.",
+            },
+        )
+        response = await user_says("wakeup 8am", expected_responses=1)
 
         self.assert_equal(
             response.content,
@@ -23,14 +28,11 @@ class TestManageWakeup(Test):
         )
 
         # 12 UTC is 8 EST
-        now.suppose_it_is(now().replace(hour=11, minute=59, second=59))
+        alert = await get_messages_at_time(Time(hour=12), expected_messages=1)
 
-        assert (
-            alert := await next_msg(test_channel, fakemogus_id, is_not=response)
-        ), "Timed out waiting for response."
         self.assert_equal(
             alert.content,
-            """Good morning, <@1074389982095089664>! Here is your current todo list:
+            f"""Good morning, <@{testmogus_id}>! Here is your current todo list:
 ```
 1) gamine
 ```""",

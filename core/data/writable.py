@@ -476,3 +476,9 @@ class Wakeup(RepeatableTask, Base):
             <= time_dist(prev_activation.time(), curr_time.time())
             <= self._activation_threshold
         )
+
+    def __repr__(self) -> str:
+        return (
+            f"Wakeup(user={self.user}, time={self.time}, "
+            f"channel={self.channel}, disabled={self.disabled})"
+        )

@@ -4,7 +4,6 @@ import discord
 
 from custom_typing.protocols import Str_able
 
-
 with open("token.txt", "r") as f:
     TOKEN, TEST_TOKEN, FAKE_TOKEN = f.read().strip().split("\n")
 
@@ -17,7 +16,7 @@ def get_token():
 
 
 fakemogus_id = 1089042918259564564
-testmogus_id = 1074389982095089664
+testmogus_id = 0
 
 GUILD = "suspcious"
 
@@ -28,8 +27,6 @@ test_client = discord.Client(intents=discord.Intents.all())
 
 
 # TODO: figure out how to mock this more accurately
-def get_test_channel() -> discord.PartialMessageable:
-    return test_client.get_partial_messageable(test_channel_id)
 
 
 class Separator:

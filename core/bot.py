@@ -42,7 +42,7 @@ from core.timer import Timer
 if TYPE_CHECKING:
     from discord.message import Message
 
-data = DataHandler(client)
+data = DataHandler()
 timer = Timer(data)
 
 

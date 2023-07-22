@@ -35,7 +35,7 @@ async def init_wakeup(user: int, channel: int, data: DataHandler) -> None:
     await client.get_partial_messageable(channel).send(
         f"Daily pings with your todo list will appear here, <@{user}>!\n"
         "`wakeup <time>` changes the time, `wakeup set` resets the channel, and "
-        "`wakeup disable` shuts it up.\n"
+        "`wakeup disable` shuts it up."
     )
     data.wakeup[user] = Wakeup(user, default_wakeup(user, data), channel)
 
@@ -47,7 +47,7 @@ async def enable(msg: discord.message.Message, data: DataHandler) -> None:
         await msg.reply(
             f"Daily pings with your todo list will appear here, <@{user}>!\n"
             "`wakeup <time>` changes the time, `wakeup set` resets the channel, and "
-            "`wakeup disable` shuts it up.\n"
+            "`wakeup disable` shuts it up."
         )
     elif cast(bool, data.wakeup[user].disabled):
         await msg.reply("Re-enabled your daily todo reminders.")
@@ -94,7 +94,7 @@ async def set_channel(msg: discord.message.Message, data: DataHandler) -> None:
         await msg.reply(
             f"Daily pings with your todo list will appear here, <@{user}>!\n"
             "`wakeup <time>` changes the time, `wakeup set` resets the channel, and "
-            "`wakeup disable` shuts it up.\n"
+            "`wakeup disable` shuts it up."
         )
         await msg.delete()
     else:
@@ -117,7 +117,7 @@ async def change_wakeup_time(
         await msg.reply(
             f"Daily pings with your todo list will appear here, <@{user}>!\n"
             "`wakeup <time>` changes the time, `wakeup set` resets the channel, and "
-            "`wakeup disable` shuts it up.\n"
+            "`wakeup disable` shuts it up."
         )
         await msg.delete()
     else:

@@ -10,10 +10,7 @@ import sys
 import traceback
 from typing import Any, Dict, List
 from unittest.mock import MagicMock, patch
-from core.utils.constants import (
-    test_client,
-    sep,
-)
+from core.utils.constants import sep
 from tests.utils import reset_data, mock_get_token, test_channel
 from core.bot import data
 from core.utils.color import green, red, yellow
@@ -46,17 +43,22 @@ class TestRunner:
     def __init__(self) -> None:
         self.tests: List["TestMeta"] = []
 
+    async def run(self) -> None:
+        # from core.utils.constants import client, TEST_TOKEN
+
+        # await client.start(TEST_TOKEN)
+
+        await self._run()
+
     @patch("core.bot.get_token")
     @patch("core.data.writable.client.get_partial_messageable")
-    async def run(self, client: MagicMock, get_token: MagicMock):
+    async def _run(self, client: MagicMock, get_token: MagicMock):
         data.populate_data()
         mock_get_token(get_token)
         client.return_value = test_channel
 
         tests = load_test_classes()
         reset_data()
-
-        # await asyncio.sleep(10**20)
 
         ok, tot = 0, 0
 
@@ -166,18 +168,7 @@ class Test(metaclass=TestMeta):
             raise AssertionError(res)
 
 
-@test_client.event
-async def on_ready():
-    if not test_client.guilds:
-        print(f"{test_client.user} is not connected to any guilds.")
-    else:
-        print(
-            f"{test_client.user} is connected to "
-            f"{', '.join(guild.name for guild in test_client.guilds)}."
-        )
-
-
-async def start():
+async def start_test():
     try:
         await asyncio.gather(TestRunner().run(), Timer(data).run())
     except SystemExit:
@@ -187,7 +178,7 @@ async def start():
 def main():
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
-    asyncio.run(start())
+    asyncio.run(start_test())
 
 
 if __name__ == "__main__":

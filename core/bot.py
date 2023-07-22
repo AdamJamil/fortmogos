@@ -110,7 +110,7 @@ arg_parser.commands.extend((daily_cmd, in_cmd))
 
 @client.event
 async def on_message(msg: Message):
-    if msg.author.id in (1061719682773688391, 1089042918259564564):
+    if msg.author.id in (1061719682773688391, 1074389982095089664):
         return
     try:
         parsed_command = arg_parser.parse_message(msg.content)
@@ -140,7 +140,7 @@ async def on_reaction_add(reaction: Reaction, user: Union[Member, User]):
         await manage_reaction(reaction, user, data)
     elif user.id == reaction.message.author.id and str(reaction.emoji) == warning_emoji:
         async for user in reaction.users():
-            if user.id in (1061719682773688391, 1089042918259564564):
+            if user.id in (1061719682773688391, 1074389982095089664):
                 await reaction.message.remove_reaction(warning_emoji, user)
                 parsed_command = arg_parser.parse_message(reaction.message.content)
                 if (

@@ -18,15 +18,7 @@ def get_token():
 fakemogus_id = 1089042918259564564
 testmogus_id = 0
 
-GUILD = "suspcious"
-
 client = discord.Client(intents=discord.Intents.all())
-
-test_channel_id = 1089045607840231505
-test_client = discord.Client(intents=discord.Intents.all())
-
-
-# TODO: figure out how to mock this more accurately
 
 
 class Separator:

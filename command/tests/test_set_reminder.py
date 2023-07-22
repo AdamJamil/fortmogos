@@ -1,9 +1,6 @@
 from typing import cast
 
-from core.utils.constants import (
-    test_channel_id,
-    testmogus_id,
-)
+from core.utils.constants import testmogus_id
 from tests.main import Test
 
 from datetime import timedelta, time as Time
@@ -34,7 +31,6 @@ class TestSetReminder(Test):
             {
                 "msg": "wake up",
                 "user": testmogus_id,
-                "channel_id": test_channel_id,
                 "_repeat_activation_threshold": timedelta(seconds=60),
                 "periodicity": timedelta(days=1),
             },
@@ -78,7 +74,6 @@ class TestSetReminder(Test):
                 "repeatable": False,
                 "msg": "wake up",
                 "user": testmogus_id,
-                "channel_id": test_channel_id,
                 "_reminder_str": (
                     "Hey <@{user}>, this is a reminder to {msg}. It's currently {x}."
                 ),

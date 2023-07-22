@@ -7,10 +7,13 @@ from pytz import utc
 from core.bot import on_message, on_reaction_add
 from core.data.writable import Timezone, Wakeup
 from core.timer import now
-from core.utils.constants import fakemogus_id, testmogus_id, FAKE_TOKEN, test_channel_id
+from core.utils.constants import fakemogus_id, testmogus_id, FAKE_TOKEN
 from datetime import time as Time, datetime as dt
 
 from core.utils.time import replace_down
+
+
+test_channel_id = 2394823904
 
 
 def reset_data() -> None:

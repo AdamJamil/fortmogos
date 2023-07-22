@@ -263,13 +263,16 @@ class Literal(Expr0):
         """Matches an entire phrase."""
         tokens = option.split(" ")
         initial_tokens = len(x)
+        warnings: List[Warn] = []
         for actual, expect in zip(tuple(x), tokens):
             actual = actual.lower()
-            if not isinstance(match := self.match_word(x, actual, expect), tuple):
-                return match
+            if isinstance(match := self.match_word(x, actual, expect), Warn):
+                warnings.append(match)
+            elif match is None:
+                return None
         if initial_tokens < len(tokens):
-            return Warn("Ran out of tokens while parsing.")
-        return ()
+            return None if warnings else Warn("Ran out of tokens while parsing.")
+        return warnings[0] if warnings else ()
 
     def match(self, x: Deque[str]) -> Union[Tuple[()], Warn, None]:
         """Tries all options"""

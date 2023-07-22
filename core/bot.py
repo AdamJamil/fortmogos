@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import asyncio
-from random import randint
+from random import choice, randint
 import traceback
 from typing import TYPE_CHECKING, Any, List, Union, cast
 from discord import Member, Reaction, User
@@ -115,7 +115,7 @@ async def on_message(msg: Message):
         return
     if msg.author.id == 267807519286624258:
         if randint(1, 4) == 1:
-            await msg.add_reaction("🍆")
+            await msg.add_reaction(choice(["🍆", "💦", "🍑", "😳"]))
     try:
         parsed_command = arg_parser.parse_message(msg.content)
 

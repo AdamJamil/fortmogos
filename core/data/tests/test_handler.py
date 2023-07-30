@@ -1,8 +1,7 @@
 from typing import Any, Dict, List
-from unittest.mock import MagicMock, patch
 from disc.tests.main import Test
 from core.start import data
-from disc.tests.utils import MockChannel, user_says
+from disc.tests.utils import user_says
 
 
 def attrs(y: List[Any]) -> List[Dict[Any, Any]]:
@@ -22,7 +21,6 @@ def attrs(y: List[Any]) -> List[Dict[Any, Any]]:
 class TestHandler(Test):
     def reload_data(self) -> None:
         object.__setattr__(data, "tasks", None)
-        object.__setattr__(data, "alert_channels", None)
         object.__setattr__(data, "user_tasks", None)
 
         data.populate_data()

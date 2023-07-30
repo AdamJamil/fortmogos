@@ -9,6 +9,7 @@ from core.data.handler import DataHandler
 
 
 data = DataHandler()
+data.populate_data()
 timer = Timer(data)
 
 

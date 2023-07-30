@@ -53,7 +53,6 @@ class TestRunner:
     @patch("disc.start.get_token")
     @patch("core.data.writable.client.get_partial_messageable")
     async def _run(self, client: MagicMock, get_token: MagicMock):
-        data.populate_data()
         mock_get_token(get_token)
         client.return_value = test_channel
 

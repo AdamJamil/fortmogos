@@ -1,5 +1,5 @@
-from tests.main import Test
-from tests.utils import user_says
+from disc.tests.main import Test
+from disc.tests.utils import user_says
 
 
 class TestHelp(Test):

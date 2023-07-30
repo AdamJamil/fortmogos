@@ -1,8 +1,9 @@
 from typing import Any, Dict, List
+from unittest.mock import MagicMock, patch
 from core.data.writable import AlertChannel
-from tests.main import Test
-from core.bot import data
-from tests.utils import user_says
+from disc.tests.main import Test
+from core.start import data
+from disc.tests.utils import MockChannel, user_says
 
 
 def attrs(y: List[Any]) -> List[Dict[Any, Any]]:
@@ -36,7 +37,9 @@ class TestHandler(Test):
         for x, y in zip(sorted(orig_tasks, key=repr), sorted(new_tasks, key=repr)):
             self.assert_dict_equal(x, y)
 
-    async def test_load(self) -> None:
+    @patch("command.misc.client.get_channel")
+    async def test_load(self, get_channel: MagicMock) -> None:
+        get_channel.return_value = MockChannel(0)
         await user_says("in 3d8h5m4s wake up")
         self.check_save_load()
 

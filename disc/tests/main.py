@@ -11,8 +11,8 @@ import traceback
 from typing import Any, Dict, List
 from unittest.mock import MagicMock, patch
 from core.utils.constants import sep
-from tests.utils import reset_data, mock_get_token, test_channel
-from core.bot import data
+from disc.tests.utils import reset_data, mock_get_token, test_channel
+from core.start import data
 from core.utils.color import green, red, yellow
 from custom_typing.protocols import Color, Measureable
 
@@ -50,7 +50,7 @@ class TestRunner:
 
         await self._run()
 
-    @patch("core.bot.get_token")
+    @patch("disc.start.get_token")
     @patch("core.data.writable.client.get_partial_messageable")
     async def _run(self, client: MagicMock, get_token: MagicMock):
         data.populate_data()

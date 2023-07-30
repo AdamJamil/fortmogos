@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from abc import abstractmethod
 from datetime import datetime as dt, timedelta, time as Time
 from math import ceil
@@ -238,7 +240,7 @@ class Alert(Task):
         e.g. for tasks we want to schedule for ourselves. May need to be refactored if
         we want to group alert messages together.
         """
-        from core.bot import data
+        from core.start import data
 
         try:
             msg = self._reminder_str.format(
@@ -255,7 +257,7 @@ class Alert(Task):
 
         res = await client.get_partial_messageable(cast(int, self.channel_id)).send(msg)
         await res.add_reaction(todo_emoji)
-        data.reminder_msgs[cast(int, self.user), res] = self
+        data.reminder_msgs[cast(int, self.user), res] = self  # type: ignore
 
     @property
     @abstractmethod
@@ -292,7 +294,7 @@ class PeriodicAlert(Alert, PeriodicTask, Base):
 
     @property
     def full_desc(self) -> str:
-        from core.bot import data
+        from core.start import data
 
         if (self.periodicity - timedelta(days=1)).total_seconds() <= 5:
             time_str = logical_time_repr(
@@ -336,7 +338,7 @@ class SingleAlert(Alert, SingleTask, Base):
 
     @property
     def full_desc(self) -> str:
-        from core.bot import data
+        from core.start import data
 
         time_str = logical_dt_repr(
             self.activation, data.timezones[cast(int, self.user)].tz
@@ -446,7 +448,7 @@ class Wakeup(RepeatableTask, Base):
         if cast(bool, self.disabled):
             return
 
-        from core.bot import data
+        from core.start import data
 
         todo_str = "\n".join(
             f"{i+1}) {cast(str, y.desc)}"

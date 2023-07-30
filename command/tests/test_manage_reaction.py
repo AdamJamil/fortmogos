@@ -1,7 +1,7 @@
 from core.timer import now
-from tests.main import Test
+from disc.tests.main import Test
 from datetime import timedelta
-from tests.utils import (
+from disc.tests.utils import (
     get_messages_at_time,
     query_message_with_reaction,
     user_says,

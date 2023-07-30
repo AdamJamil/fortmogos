@@ -1,6 +1,6 @@
-from tests.main import Test
+from disc.tests.main import Test
 
-from tests.utils import user_says
+from disc.tests.utils import user_says
 from core.utils.constants import testmogus_id
 
 

@@ -1,15 +1,15 @@
 from typing import cast
 
 from core.utils.constants import testmogus_id
-from tests.main import Test
+from disc.tests.main import Test
 
 from datetime import timedelta, time as Time
-from tests.utils import (
+from disc.tests.utils import (
     get_messages_at_time,
     test_message_deleted,
     user_says,
 )
-from core.bot import data
+from core.start import data
 from core.data.writable import PeriodicAlert, SingleAlert
 from core.timer import now
 
@@ -60,7 +60,7 @@ class TestSetReminder(Test):
 
         self.assert_starts_with(
             response.content,
-            f"<@{testmogus_id}>'s reminder on the ",
+            f"<@{testmogus_id}>'s reminder on ",
         )
         self.assert_ends_with(response.content, ' to "wake up" has been set.')
         self.assert_true(test_message_deleted("in 3d8h5m4s wake up"))

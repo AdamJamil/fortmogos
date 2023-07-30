@@ -1,7 +1,7 @@
-from core.bot import data
-from tests.main import Test
+from core.start import data
+from disc.tests.main import Test
 from datetime import time as Time
-from tests.utils import get_messages_at_time, user_says
+from disc.tests.utils import get_messages_at_time, user_says
 from core.utils.constants import testmogus_id
 
 

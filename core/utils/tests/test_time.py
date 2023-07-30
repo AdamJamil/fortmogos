@@ -1,7 +1,7 @@
 from datetime import datetime as dt, time as Time
 
 import pytz
-from tests.main import Test
+from disc.tests.main import Test
 from core.utils.time import parse_duration, parse_time
 
 

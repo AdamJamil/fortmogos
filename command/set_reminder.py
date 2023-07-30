@@ -1,6 +1,6 @@
 from datetime import datetime as dt, time as Time, timedelta
-import discord
 from pytz import utc
+from core.context import Context
 from core.data.writable import PeriodicAlert, SingleAlert
 from core.data.handler import DataHandler
 from core.timer import now
@@ -8,12 +8,12 @@ from core.utils.time import logical_dt_repr, replace_down, tz_convert_time
 
 
 async def set_daily(
-    msg: discord.message.Message,
+    ctx: Context,
     data: DataHandler,
     reminder_time: Time,
     reminder_str: str,
 ) -> None:
-    tz = data.timezones[msg.author.id].tz
+    tz = data.timezones[ctx.user_id].tz
     reminder_time = tz_convert_time(reminder_time, tz, utc)
     reminder_dt = replace_down((curr := now()), "hour", reminder_time)
     if reminder_dt < curr:
@@ -21,23 +21,23 @@ async def set_daily(
     data.tasks.append(
         PeriodicAlert(
             reminder_str,
-            msg.author.id,
-            msg.channel.id,
+            ctx.user_id,
+            ctx.channel_id,
             timedelta(days=1),
             reminder_dt,
             "[daily]",
         )
     )
-    await msg.reply(
-        f"<@{msg.author.id}>'s daily reminder at "
+    await ctx.reply(
+        f"<@{ctx.user_id}>'s daily reminder at "
         f"{logical_dt_repr(reminder_time, tz)}"
         f' to "{reminder_str}" has been set.'
     )
-    await msg.delete()
+    await ctx.delete()
 
 
 async def set_in(
-    msg: discord.message.Message,
+    ctx: Context,
     data: DataHandler,
     reminder_time: dt,
     reminder_str: str,
@@ -45,14 +45,14 @@ async def set_in(
     data.tasks.append(
         SingleAlert(
             reminder_str,
-            msg.author.id,
-            msg.channel.id,
+            ctx.user_id,
+            ctx.channel_id,
             reminder_time,
         )
     )
-    await msg.reply(
-        f"<@{msg.author.id}>'s reminder "
-        f"{logical_dt_repr(reminder_time, data.timezones[msg.author.id].tz)}"
+    await ctx.reply(
+        f"<@{ctx.user_id}>'s reminder "
+        f"{logical_dt_repr(reminder_time, data.timezones[ctx.user_id].tz)}"
         f' to "{reminder_str}" has been set.'
     )
-    await msg.delete()
+    await ctx.delete()

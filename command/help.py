@@ -1,11 +1,10 @@
-import discord
-
+from core.context import Context
 from core.data.handler import DataHandler
 
 
-async def help_reminder(msg: discord.message.Message, _: DataHandler) -> None:
-    await msg.reply(
-        f"Sure, <@{msg.author.id}>. Here are the options:\n"
+async def help_reminder(ctx: Context, _: DataHandler) -> None:
+    await ctx.reply(
+        f"Sure, <@{ctx.user_id}>. Here are the options:\n"
         "```\n"
         # in
         '\tin {duration} {msg} - e.g. "in 2d10h go play among us"\n'
@@ -41,4 +40,4 @@ async def help_reminder(msg: discord.message.Message, _: DataHandler) -> None:
         'You can ask for any further help with "help reminder {name}" - '
         'e.g. "help reminder on". Also, this message will self-destruct shortly.'
     )
-    await msg.delete()
+    await ctx.delete()

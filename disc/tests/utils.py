@@ -4,7 +4,7 @@ from typing import List, Literal, Tuple, Union, overload
 from unittest.mock import MagicMock
 
 from pytz import utc
-from core.bot import on_message, on_reaction_add
+from disc.receive import on_message, on_reaction_add
 from core.data.writable import Timezone, Wakeup
 from core.timer import now
 from core.utils.constants import fakemogus_id, testmogus_id, FAKE_TOKEN
@@ -20,7 +20,7 @@ def reset_data() -> None:
     now.suppose_it_is(dt.now(tz=utc).replace(tzinfo=None))
     now.set_speed(1)
 
-    from core.bot import data
+    from core.start import data
 
     data.alert_channels.clear()
 

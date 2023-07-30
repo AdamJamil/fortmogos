@@ -2,14 +2,13 @@ from __future__ import annotations
 
 from typing import cast
 from datetime import time as Time
-import discord
 import pytz
 from pytz import utc
+from core.context import Context
 
 from core.data.handler import DataHandler
 from core.data.writable import Wakeup
 from core.utils.time import logical_time_repr, tz_convert_time
-from core.utils.constants import client
 
 
 # TODO: Maybe call this from a wakeup help method?
@@ -31,54 +30,58 @@ def default_wakeup(user: int, data: DataHandler) -> Time:
     )
 
 
-async def init_wakeup(user: int, channel: int, data: DataHandler) -> None:
-    await client.get_partial_messageable(channel).send(
-        f"Daily pings with your todo list will appear here, <@{user}>!\n"
+async def init_wakeup(ctx: Context, data: DataHandler) -> None:
+    await ctx.send(
+        f"Daily pings with your todo list will appear here, <@{ctx.user_id}>!\n"
         "`wakeup <time>` changes the time, `wakeup set` resets the channel, and "
-        "`wakeup disable` shuts it up."
+        "`wakeup disable` shuts it up.",
     )
-    data.wakeup[user] = Wakeup(user, default_wakeup(user, data), channel)
+    data.wakeup[ctx.user_id] = Wakeup(
+        ctx.user_id,
+        default_wakeup(ctx.user_id, data),
+        ctx.channel_id,
+    )
 
 
-async def enable(msg: discord.message.Message, data: DataHandler) -> None:
-    user = msg.author.id
+async def enable(ctx: Context, data: DataHandler) -> None:
+    user = ctx.user_id
     if user not in data.wakeup:
-        data.wakeup[user] = Wakeup(user, default_wakeup(user, data), msg.channel.id)
-        await msg.reply(
+        data.wakeup[user] = Wakeup(user, default_wakeup(user, data), ctx.channel_id)
+        await ctx.reply(
             f"Daily pings with your todo list will appear here, <@{user}>!\n"
             "`wakeup <time>` changes the time, `wakeup set` resets the channel, and "
             "`wakeup disable` shuts it up."
         )
     elif cast(bool, data.wakeup[user].disabled):
-        await msg.reply("Re-enabled your daily todo reminders.")
+        await ctx.reply("Re-enabled your daily todo reminders.")
     else:
-        await msg.reply("Already enabled, galaxy brain.")
-    await msg.delete()
+        await ctx.reply("Already enabled, galaxy brain.")
+    await ctx.delete()
 
 
-async def disable(msg: discord.message.Message, data: DataHandler) -> None:
-    user = msg.author.id
+async def disable(ctx: Context, data: DataHandler) -> None:
+    user = ctx.user_id
     if user not in data.wakeup:
         data.wakeup[user] = Wakeup(
             user,
             default_wakeup(user, data),
-            msg.channel.id,
+            ctx.channel_id,
             disabled=True,
         )
-        await msg.reply(
+        await ctx.reply(
             "You don't have a wakeup set. Setting and disabling one. "
             "You can undo this with `wakeup enable`."
         )
-        await msg.delete()
+        await ctx.delete()
     elif cast(bool, data.wakeup[user].disabled):
-        await msg.reply("It's already disabled, galaxy brain.")
-        await msg.delete()
+        await ctx.reply("It's already disabled, galaxy brain.")
+        await ctx.delete()
     else:
-        await msg.reply(
+        await ctx.reply(
             f"Got it, <@{user}>, you will no longer "
             "receive daily todo reminders. You can undo this with `wakeup enable`."
         )
-        await msg.delete()
+        await ctx.delete()
         data.wakeup[user] = Wakeup(
             user,
             data.wakeup[user].time,
@@ -87,43 +90,43 @@ async def disable(msg: discord.message.Message, data: DataHandler) -> None:
         )
 
 
-async def set_channel(msg: discord.message.Message, data: DataHandler) -> None:
-    user = msg.author.id
+async def set_channel(ctx: Context, data: DataHandler) -> None:
+    user = ctx.user_id
     if user not in data.wakeup:
-        data.wakeup[user] = Wakeup(user, default_wakeup(user, data), msg.channel.id)
-        await msg.reply(
+        data.wakeup[user] = Wakeup(user, default_wakeup(user, data), ctx.channel_id)
+        await ctx.reply(
             f"Daily pings with your todo list will appear here, <@{user}>!\n"
             "`wakeup <time>` changes the time, `wakeup set` resets the channel, and "
             "`wakeup disable` shuts it up."
         )
-        await msg.delete()
+        await ctx.delete()
     else:
-        await msg.reply(
+        await ctx.reply(
             f"Got it, <@{user}>, your daily todo list will appear here now."
         )
-        await msg.delete()
+        await ctx.delete()
 
 
 async def change_wakeup_time(
-    msg: discord.message.Message,
+    ctx: Context,
     data: DataHandler,
     new_wakeup: Time,
 ) -> None:
-    tz = data.timezones[msg.author.id].tz
+    tz = data.timezones[ctx.user_id].tz
     new_wakeup = tz_convert_time(new_wakeup, tz, utc)
-    user = msg.author.id
+    user = ctx.user_id
     if user not in data.wakeup:
-        data.wakeup[user] = Wakeup(user, new_wakeup, msg.channel.id)
-        await msg.reply(
+        data.wakeup[user] = Wakeup(user, new_wakeup, ctx.user_id)
+        await ctx.reply(
             f"Daily pings with your todo list will appear here, <@{user}>!\n"
             "`wakeup <time>` changes the time, `wakeup set` resets the channel, and "
             "`wakeup disable` shuts it up."
         )
-        await msg.delete()
+        await ctx.delete()
     else:
         data.wakeup[user] = Wakeup(
             user, new_wakeup, cast(int, data.wakeup[user].channel)
         )
         user_time = logical_time_repr(new_wakeup, data.timezones[user].tz)
-        await msg.reply(f"Got it, <@{user}>, your wakeup time was set to {user_time}.")
-        await msg.delete()
+        await ctx.reply(f"Got it, <@{user}>, your wakeup time was set to {user_time}.")
+        await ctx.delete()

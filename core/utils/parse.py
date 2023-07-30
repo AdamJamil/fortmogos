@@ -19,12 +19,12 @@ from typing import (
 )
 
 from typing_extensions import TypeVarTuple, Unpack
-from discord import Message
 from datetime import datetime as dt, time as Time
 
 import pytz
 from pytz import BaseTzInfo
 from pytz import utc
+from core.context import Context
 from core.data.handler import DataHandler
 from core.timer import now
 from core.utils.time import parse_duration, replace_down
@@ -86,7 +86,7 @@ class Chain(Generic[Unpack[ARGS]], ChainLike):
     @overload
     def __rshift__(
         self,
-        o: Callable[[Message, DataHandler, Unpack[ARGS]], Coroutine[Any, Any, None]],
+        o: Callable[[Context, DataHandler, Unpack[ARGS]], Coroutine[Any, Any, None]],
     ) -> Command:
         ...
 
@@ -129,7 +129,7 @@ class EmptyChain(ChainLike):
     @overload
     def __rshift__(
         self,
-        o: Callable[[Message, DataHandler], Coroutine[Any, Any, None]],
+        o: Callable[[Context, DataHandler], Coroutine[Any, Any, None]],
     ) -> Command:
         ...
 
@@ -194,7 +194,7 @@ class Command:
             warnings or tuple(args),
         )
 
-    def __str__(self) -> str:
+    def __repr__(self) -> str:
         return str(self.exprs)
 
 
@@ -212,7 +212,7 @@ class ParsedCommand:
         self.res = res
 
     def __str__(self) -> str:
-        return str(self.exprs)
+        return f"Parsed to function {self.f.__name__}: {self.res}"
 
 
 class Expr0(Expr, EmptyChain):
@@ -294,9 +294,6 @@ class Literal(Expr0):
             x.popleft()
         return best
 
-    def __str__(self) -> str:
-        return f"Literal({self.options})"
-
     def __repr__(self) -> str:
         return f"Literal({self.options})"
 
@@ -307,9 +304,6 @@ class Num(Expr1[int]):
             res = x.popleft()
             return Warn(f"Expected number; got `{res}`.")
         return (int(val),) if x and x[0].isnumeric() and (val := x.popleft()) else None
-
-    def __str__(self) -> str:
-        return "Num"
 
     def __repr__(self) -> str:
         return "Num"
@@ -350,9 +344,6 @@ class DurationExpr(Expr1[dt]):
         for _ in range(best[0] + 1):  # consumed tokens
             x.popleft()
         return (best[1],)
-
-    def __str__(self) -> str:
-        return "Duration"
 
     def __repr__(self) -> str:
         return "Duration"
@@ -402,9 +393,6 @@ class TimeExpr(Expr1[Time]):
 
         hour = (hour % 12) + 12 * (time_sig == "pm")
         return (Time(hour=hour, minute=minute, second=0, microsecond=0),)
-
-    def __str__(self) -> str:
-        return "Time"
 
     def __repr__(self) -> str:
         return "Time"
@@ -521,9 +509,6 @@ class TimeZoneExpr(Expr1[BaseTzInfo]):
                     "try providing your local time or UTC offset."
                 )
 
-    def __str__(self) -> str:
-        return "TimeZone"
-
     def __repr__(self) -> str:
         return "TimeZone"
 
@@ -534,9 +519,6 @@ class KleeneStar(Expr1[str]):
         while x:
             res += " " + x.popleft()
         return (res,)
-
-    def __str__(self) -> str:
-        return "KleeneStar"
 
     def __repr__(self) -> str:
         return "KleeneStar"

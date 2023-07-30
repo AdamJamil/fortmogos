@@ -20,8 +20,10 @@ def attrs(y: List[Any]) -> List[Dict[Any, Any]]:
 
 class TestHandler(Test):
     def reload_data(self) -> None:
-        object.__setattr__(data, "tasks", None)
-        object.__setattr__(data, "user_tasks", None)
+        object.__delattr__(data, "tasks")
+        object.__delattr__(data, "user_tasks")
+        object.__delattr__(data, "timezones")
+        object.__delattr__(data, "wakeup")
 
         data.populate_data()
 

@@ -33,7 +33,6 @@ async def on_ready():
             f"{client.user} is connected to "
             f"{', '.join(guild.name for guild in client.guilds)}."
         )
-    data.populate_data()
 
 
 command_processor = CommandProcessor()

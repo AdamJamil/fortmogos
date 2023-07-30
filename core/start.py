@@ -6,10 +6,10 @@ import traceback
 from core.timer import Timer
 from disc.start import start_discord
 from core.data.handler import DataHandler
+import disc.receive
 
 
 data = DataHandler()
-data.populate_data()
 timer = Timer(data)
 
 

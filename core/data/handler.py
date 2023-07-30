@@ -190,12 +190,11 @@ class DataHandler:
 
     def __init__(self) -> None:
         self.reminder_msgs: Dict[Tuple[int, str], Alert] = {}
+        self.populate_data()
 
     def populate_data(self) -> None:
-        """
-        Delayed from init. This is because we need the client to be initialized
-        before calling the reconstructor for AlertChannel.
-        """
+        if hasattr(self, "tasks") and self.tasks is not None:
+            return
         self.tasks: AtomicDBList[Task] = AtomicDBList(
             [
                 x
@@ -215,7 +214,9 @@ class DataHandler:
         )
 
     def __setattr__(self, __name: str, __value: Any) -> None:
-        if hasattr(self, __name) and isinstance(getattr(self, __name), AtomicDBList):
-            raise TypeError("Cannot reassign AtomicDBList")
+        if hasattr(self, __name) and isinstance(
+            getattr(self, __name), (AtomicDBList, AtomicDBDict)
+        ):
+            raise TypeError("Cannot reassign AtomicDB types.")
 
         super().__setattr__(__name, __value)

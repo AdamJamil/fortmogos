@@ -64,19 +64,19 @@ class TestRunner:
 
         for test_cls in tests:
             test = test_cls()
-            for attr in dir(test):
-                if attr.startswith("test_"):
-                    if len(sys.argv) == 2 and not attr.startswith(sys.argv[1]):
+            for test_name in dir(test):
+                if test_name.startswith("test_"):
+                    if len(sys.argv) == 2 and not test_name.startswith(sys.argv[1]):
                         continue
                     reset_data()
-                    yellow(f"[🏃] Running {attr}.")
+                    yellow(f"[🏃] Running {test_name}.")
                     try:
-                        await getattr(test, attr)()
+                        await getattr(test, test_name)()
                     except Exception:
-                        red(f"[X] Failed {attr}.")
+                        red(f"[X] Failed {test_name}.")
                         red(traceback.format_exc())
                     else:
-                        green(f"[✓] Passed {attr}.")
+                        green(f"[✓] Passed {test_name}.")
                         ok += 1
                     tot += 1
 

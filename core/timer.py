@@ -42,12 +42,8 @@ class Timer:
         self.data = data
 
     async def run(self):
-        while not hasattr(self.data, "alert_channels"):
-            await asyncio.sleep(0.4)
-        if self.data.alert_channels:
-            await asyncio.gather(
-                *(channel.send("nyooooom") for channel in self.data.alert_channels)
-            )
+        while not hasattr(self.data, "wakeup"):
+            await asyncio.sleep(0.1)
 
         while "among":
             print(f"It's currently {' '.join(str(now()).split(' ')[1:])}")

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from typing import Any
-from command.misc import hijack, respond_test, subscribe_alerts
+from command.misc import hijack, respond_test
 from core.context import Context
 from core.utils.exceptions import MissingTimezoneException
 
@@ -42,7 +42,6 @@ class CommandProcessor:
         self.arg_parser = ArgParser(
             NO_TZ() >> Literal("help reminder") >> help_reminder,
             NO_TZ() >> Literal("timezone") >> TimeZoneExpr() >> manage_timezone,
-            NO_TZ() >> Literal("subscribe alerts") >> subscribe_alerts,
             NO_TZ() >> Literal("With a hey, ho") >> respond_test,
             Literal(SHOW, TASKS) >> show_tasks,
             Literal(DELETE, TASKS) >> Num() >> delete_task,

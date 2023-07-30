@@ -22,8 +22,6 @@ def reset_data() -> None:
 
     from core.start import data
 
-    data.alert_channels.clear()
-
     for attr in dir(data):
         if attr.startswith("__"):
             continue

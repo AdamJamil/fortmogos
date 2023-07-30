@@ -16,7 +16,7 @@ from typing import (
     overload,
 )
 from core.data.db import session
-from core.data.writable import Alert, AlertChannel, Task, Timezone, UserTask, Wakeup
+from core.data.writable import Alert, Task, Timezone, UserTask, Wakeup
 from core.utils.exceptions import MissingTimezoneException
 from core.utils.walk import subclasses_of
 from custom_typing.protocols import Writable
@@ -203,9 +203,6 @@ class DataHandler:
                 if hasattr(subcls, "__tablename__") and subcls != Wakeup
                 for x in (session.query(subcls)).all()
             ]
-        )
-        self.alert_channels: AtomicDBList[AlertChannel] = AtomicDBList(
-            session.query(AlertChannel).all()
         )
         self.timezones: AtomicDBDict[int, Timezone] = AtomicDBDict(
             {cast(int, tz._id): tz for tz in session.query(Timezone).all()}, tz=True

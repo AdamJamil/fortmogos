@@ -60,5 +60,5 @@ class DiscordReactionContext(DiscordContext):
         self.message = reaction.message
         self._user_id = user.id
 
-    async def content(self, *args) -> str:
+    def content(self, *args) -> str:
         return str(self.reaction.emoji)

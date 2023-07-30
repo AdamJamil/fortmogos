@@ -15,7 +15,6 @@ from typing import (
     cast,
     overload,
 )
-import discord
 from core.data.db import session
 from core.data.writable import Alert, AlertChannel, Task, Timezone, UserTask, Wakeup
 from core.utils.exceptions import MissingTimezoneException
@@ -190,7 +189,7 @@ class DataHandler:
         return cls._instance
 
     def __init__(self) -> None:
-        self.reminder_msgs: Dict[Tuple[int, discord.Message], Alert] = {}
+        self.reminder_msgs: Dict[Tuple[int, str], Alert] = {}
 
     def populate_data(self) -> None:
         """

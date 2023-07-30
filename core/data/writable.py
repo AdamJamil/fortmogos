@@ -5,7 +5,6 @@ from datetime import datetime as dt, timedelta, time as Time
 from math import ceil
 from typing import Any, Dict, cast
 
-import discord
 import pytz
 from core.timer import now
 from core.utils.exceptions import MissingTimezoneException
@@ -257,7 +256,7 @@ class Alert(Task):
 
         res = await client.get_partial_messageable(cast(int, self.channel_id)).send(msg)
         await res.add_reaction(todo_emoji)
-        data.reminder_msgs[cast(int, self.user), res] = self  # type: ignore
+        data.reminder_msgs[cast(int, self.user), res.content] = self  # type: ignore
 
     @property
     @abstractmethod
@@ -344,37 +343,6 @@ class SingleAlert(Alert, SingleTask, Base):
             self.activation, data.timezones[cast(int, self.user)].tz
         )
         return f"your reminder at {time_str} to {self.msg}"
-
-
-class AlertChannel(Base, discord.TextChannel):
-    """
-    Represents a messagable channel that should get bot alerts.
-    The TextChannel subclass is hacky, but makes it type like a MessageableChannel.
-    """
-
-    __tablename__ = "alert_channel"
-
-    _id = Column(Integer, primary_key=True)
-
-    def __init__(
-        self,
-        channel: "discord.abc.MessageableChannel",
-    ) -> None:
-        self.set_channel(channel)
-        self._id = channel.id
-
-    @reconstructor
-    def init_on_load(self) -> None:
-        self.set_channel(client.get_channel(self._id))  # type: ignore
-
-    def set_channel(self, channel: "discord.abc.MessageableChannel") -> None:
-        for k in dir(channel):
-            if k.startswith("__"):
-                continue
-            try:
-                self.__setattr__(k, getattr(channel, k))
-            except Exception:
-                ...
 
 
 class Timezone(Base):

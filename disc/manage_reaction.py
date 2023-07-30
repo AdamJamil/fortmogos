@@ -12,7 +12,7 @@ async def manage_reaction(
     reaction: Reaction, user: Union[User, Member], data: DataHandler
 ):
     msg = reaction.message
-    if (alert := data.reminder_msgs.get((user.id, msg))) is not None:
+    if (alert := data.reminder_msgs.get((user.id, msg.content))) is not None:
         if str(reaction.emoji) == todo_emoji:
             await msg.reply(
                 f"Got it, <@{user.id}>. Your reminder to {alert.msg} "

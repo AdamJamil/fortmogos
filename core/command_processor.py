@@ -28,8 +28,6 @@ from command.manage_task import add_task, delete_task, show_tasks
 from command.manage_timezone import manage_timezone
 from command.set_reminder import set_daily, set_in
 
-from core.start import data
-
 
 SHOW = ("list", "show", "see", "view")
 DELETE = ("delete", "remove")
@@ -69,6 +67,8 @@ class CommandProcessor:
         self.arg_parser.commands.extend((daily_cmd, in_cmd))
 
     async def parse_and_respond(self, ctx: Context) -> None:
+        from core.start import data
+
         parsed_command = self.arg_parser.parse_message(ctx.content())
 
         if parsed_command.needs_tz and not await ctx.is_timezone_set():

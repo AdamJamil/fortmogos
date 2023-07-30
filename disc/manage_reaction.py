@@ -3,14 +3,13 @@ from __future__ import annotations
 from typing import Union, cast
 
 from discord import Member, Reaction, User
-from core.data.handler import DataHandler
 from core.data.writable import UserTask
 from core.utils.constants import todo_emoji
 
 
-async def manage_reaction(
-    reaction: Reaction, user: Union[User, Member], data: DataHandler
-):
+async def manage_reaction(reaction: Reaction, user: Union[User, Member]):
+    from core.start import data
+
     msg = reaction.message
     if (alert := data.reminder_msgs.get((user.id, msg.content))) is not None:
         if str(reaction.emoji) == todo_emoji:

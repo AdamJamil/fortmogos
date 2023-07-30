@@ -18,13 +18,11 @@ from command.manage_wakeup import (
 from disc.manage_reaction import manage_reaction
 from disc.context import DiscordMessageContext, DiscordReactionContext
 from core.utils.constants import sep, client
-from core.start import data
 
 if TYPE_CHECKING:
     from discord.message import Message
 
 
-@client.event
 async def on_ready():
     if not client.guilds:
         print(f"{client.user} is not connected to any guilds.")
@@ -56,8 +54,10 @@ async def on_message(msg: Message):
 
 @client.event
 async def on_reaction_add(reaction: Reaction, user: Union[Member, User]):
+    from core.start import data
+
     if str(user.id) in reaction.message.content:
-        await manage_reaction(reaction, user, data)
+        await manage_reaction(reaction, user)
     elif user.id == reaction.message.author.id and str(reaction.emoji) == warning_emoji:
         async for user in reaction.users():
             if user.id in (1061719682773688391, 1074389982095089664):

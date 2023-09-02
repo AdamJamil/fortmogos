@@ -229,7 +229,7 @@ class DataHandler:
             self.tasks.remove(rem)
         user_task_remove = []
         for task in self.user_tasks:
-            if task.user in banned_users:
+            if task.user_id in banned_users:
                 user_task_remove.append(task)
         for rem in user_task_remove:
             self.user_tasks.remove(rem)

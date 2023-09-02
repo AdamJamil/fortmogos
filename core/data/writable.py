@@ -254,9 +254,14 @@ class Alert(Task):
                 x="some unknown time, since we don't have your timezone.",
             )
 
-        res = await client.get_partial_messageable(cast(int, self.channel_id)).send(msg)
-        await res.add_reaction(todo_emoji)
-        data.reminder_msgs[cast(int, self.user), res.content] = self  # type: ignore
+        try:
+            res = await client.get_partial_messageable(cast(int, self.channel_id)).send(
+                msg
+            )
+            await res.add_reaction(todo_emoji)
+            data.reminder_msgs[cast(int, self.user), res.content] = self  # type: ignore
+        except Exception:
+            ...
 
     @property
     @abstractmethod

@@ -20,6 +20,8 @@ testmogus_id = 0
 
 client = discord.Client(intents=discord.Intents.all())
 
+banned_users = {442721077408563200}
+
 
 class Separator:
     """

@@ -20,6 +20,7 @@ from core.data.writable import Alert, Task, Timezone, UserTask, Wakeup
 from core.utils.exceptions import MissingTimezoneException
 from core.utils.walk import subclasses_of
 from custom_typing.protocols import Writable
+from core.utils.constants import banned_users
 
 T = TypeVar("T", bound=Writable | Task)
 
@@ -164,6 +165,14 @@ class AtomicDBDict(dict[K, V]):
             super().__setitem__(key, value)
             session.commit()
 
+    def __delitem__(self, key):
+        with self.lock:
+            if key not in self:
+                return
+            session.delete(super().__getitem__(key))
+            super().__delitem__(key)
+            session.commit()
+
     def clear(self) -> None:
         with self.lock:
             for _, value in super().items():
@@ -212,6 +221,24 @@ class DataHandler:
         self.wakeup: AtomicDBDict[int, Wakeup] = AtomicDBDict(
             {cast(int, wakeup.user): wakeup for wakeup in session.query(Wakeup).all()}
         )
+        task_remove = []
+        for task in self.tasks:
+            if isinstance(task, Alert) and task.user in banned_users:
+                task_remove.append(task)
+        for rem in task_remove:
+            self.tasks.remove(rem)
+        user_task_remove = []
+        for task in self.user_tasks:
+            if task.user in banned_users:
+                user_task_remove.append(task)
+        for rem in user_task_remove:
+            self.user_tasks.remove(rem)
+        for _id, _ in list(self.wakeup.items()):
+            if _id in banned_users:
+                del self.wakeup[_id]
+        for _id, _ in list(self.timezones.items()):
+            if _id in banned_users:
+                del self.timezones[_id]
 
     def __setattr__(self, __name: str, __value: Any) -> None:
         if hasattr(self, __name) and isinstance(

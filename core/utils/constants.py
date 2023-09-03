@@ -51,4 +51,4 @@ sep = Separator()
 
 
 todo_emoji = "📋"
-warning_emoji = "🥺"
+warning_emoji = "<:pleading_classic:1148036481072513075>"

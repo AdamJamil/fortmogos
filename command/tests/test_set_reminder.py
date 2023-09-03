@@ -1,5 +1,7 @@
 from typing import cast
 
+import pytz
+
 from core.utils.constants import testmogus_id
 from disc.tests.main import Test
 
@@ -48,11 +50,54 @@ class TestSetReminder(Test):
         self.assert_starts_with(
             alert.content, f"Hey <@{testmogus_id}>, this is a reminder to wake up."
         )
-        self.assert_starts_with(alert.content.split(". ")[1].split(" ")[2], "8AM")
 
         await get_messages_at_time(
             Time(hour=12, minute=0, second=2), expected_messages=0
         )
+
+    async def test_set_weekly(self) -> None:
+        response = await user_says("weekly 8am tuesdAy trash", expected_responses=1)
+        self.assert_equal(
+            response.content,
+            (
+                f'<@{testmogus_id}>\'s weekly reminder at 8AM on Tuesdays to "trash" '
+                "has been set."
+            ),
+        )
+
+        self.assert_true(test_message_deleted("weekly 8am tuesdAy trash"))
+
+        self.assert_len(data.tasks, 1)
+        self.assert_is_instance(data.tasks[0], PeriodicAlert)
+        self.assert_has_attrs(
+            data.tasks[0],
+            {
+                "msg": "trash",
+                "user": testmogus_id,
+                "_repeat_activation_threshold": timedelta(seconds=60),
+                "periodicity": timedelta(days=7),
+            },
+        )
+        task_activation = (
+            cast(PeriodicAlert, data.tasks[0])
+            .first_activation.replace(tzinfo=pytz.UTC)
+            .astimezone(pytz.timezone("US/Eastern"))
+        )
+        self.assert_equal(task_activation.hour, 8)
+        self.assert_equal(task_activation.minute, 0)
+        now.suppose_it_is(now().replace(hour=12))
+        start = now()
+
+        for i in range(14):
+            curr = start + timedelta(days=i)
+            if curr.strftime("%A") == "Tuesday":
+                alert = await get_messages_at_time(curr, expected_messages=1)
+                self.assert_equal(
+                    alert.content,
+                    f"Hey <@{testmogus_id}>, this is a reminder to trash.",
+                )
+            else:
+                await get_messages_at_time(curr, expected_messages=0)
 
     async def test_set_in(self) -> None:
         response = await user_says("in 3d8h5m4s wake up", expected_responses=1)
@@ -74,9 +119,7 @@ class TestSetReminder(Test):
                 "repeatable": False,
                 "msg": "wake up",
                 "user": testmogus_id,
-                "_reminder_str": (
-                    "Hey <@{user}>, this is a reminder to {msg}. It's currently {x}."
-                ),
+                "_reminder_str": ("Hey <@{user}>, this is a reminder to {msg}."),
             },
         )
 

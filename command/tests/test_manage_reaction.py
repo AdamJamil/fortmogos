@@ -13,8 +13,6 @@ class TestManageReminder(Test):
     async def test_manage_reaction(self) -> None:
         await user_says("in 1s gamingos", expected_responses=1)
 
-        now.suppose_it_is(now() + timedelta(seconds=1))
-
         alert = await get_messages_at_time(
             now() + timedelta(seconds=1), expected_messages=1
         )

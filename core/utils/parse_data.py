@@ -5,7 +5,6 @@ from typing import (
     DefaultDict,
     List,
     Tuple,
-    cast,
 )
 
 import pytz
@@ -27,7 +26,7 @@ def get_day_to_reminders(
     day_to_reminders: DefaultDict[dt, List[Tuple[dt, Alert]]] = defaultdict(lambda: [])
     tz = data.timezones[user_id].tz
     for reminder in data.tasks:
-        if isinstance(reminder, Alert) and cast(int, reminder.user) == user_id:
+        if isinstance(reminder, Alert) and reminder.user == user_id:
             reminder_day = replace_down(
                 reminder_dt := reminder.get_next_activation(curr_time)
                 .replace(tzinfo=pytz.utc)
@@ -51,7 +50,7 @@ def list_reminders(data: DataHandler, user_id: int) -> str:
                 + logical_time_repr(reminder_time, pytz.utc)
                 + (" " + reminder.descriptor_tag).rstrip()
                 + ": "
-                + cast(str, reminder.msg)
+                + reminder.msg
             )
             for reminder_time, reminder in reminders
         )

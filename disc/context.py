@@ -1,5 +1,5 @@
 from abc import ABC
-from typing import List, Union
+from typing import Any, List, Union
 
 from discord import Member, Message, Reaction, User
 from core.context import Context
@@ -11,13 +11,13 @@ class DiscordContext(Context, ABC):
     message: Message
     _user_id: int
 
-    async def send(self, message: str, *args) -> None:
-        await self.message.channel.send(message)
+    async def send(self, response: str, *_) -> None:
+        await self.message.channel.send(response)
 
-    async def reply(self, response: str, *args) -> None:
+    async def reply(self, response: str, *_) -> None:
         await self.message.reply(response)
 
-    async def delete(self, *args) -> None:
+    async def delete(self, *_) -> None:
         await self.message.delete()
 
     async def is_timezone_set(self) -> bool:
@@ -47,7 +47,7 @@ class DiscordMessageContext(DiscordContext):
         self.message = message
         self._user_id = message.author.id
 
-    def content(self, *args) -> str:
+    def content(self, *_: Any) -> str:
         return self.message.content
 
     def __repr__(self) -> str:
@@ -60,5 +60,5 @@ class DiscordReactionContext(DiscordContext):
         self.message = reaction.message
         self._user_id = user.id
 
-    def content(self, *args) -> str:
+    def content(self, *_) -> str:
         return str(self.reaction.emoji)

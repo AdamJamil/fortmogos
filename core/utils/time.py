@@ -1,10 +1,12 @@
 from datetime import datetime as dt, time as Time, timedelta
 from typing import (
     Dict,
+    Literal,
     Optional,
     Tuple,
     TypeVar,
     Union,
+    cast,
 )
 from dateutil.relativedelta import relativedelta
 import pytz
@@ -101,16 +103,16 @@ def parse_time(time_string: str, timezone: BaseTzInfo) -> Union[Time, str]:
     return user_datetime.astimezone(pytz.utc).time()
 
 
-def time_dist(t1: Time, t2: Time) -> timedelta:
-    dt1 = dt(year=1, month=1, day=1, hour=t1.hour, minute=t1.minute, second=t1.second)
-    dt2 = dt(year=1, month=1, day=1, hour=t2.hour, minute=t2.minute, second=t2.second)
-    diff = dt2 - dt1
-    if (s := diff.total_seconds()) < 0:
-        # need to be careful of corner case, e.g. activates at 11:59, but
-        # await hangs for a minute and so we need to check dist between
-        # times 12:00 and 11:59. this accounts for that
-        s += 24 * 60 * 60
-    return timedelta(seconds=s)
+# def time_dist(t1: Time, t2: Time) -> timedelta:
+#     dt1 = dt(year=1, month=1, day=1, hour=t1.hour, minute=t1.minute, second=t1.second)
+#     dt2 = dt(year=1, month=1, day=1, hour=t2.hour, minute=t2.minute, second=t2.second)
+#     diff = dt2 - dt1
+#     if (s := diff.total_seconds()) < 0:
+#         # need to be careful of corner case, e.g. activates at 11:59, but
+#         # await hangs for a minute and so we need to check dist between
+#         # times 12:00 and 11:59. this accounts for that
+#         s += 24 * 60 * 60
+#     return timedelta(seconds=s)
 
 
 def _date_suffix(day: int) -> str:
@@ -153,7 +155,8 @@ def logical_dt_repr(stamp: Union[dt, Time], timezone: BaseTzInfo) -> str:
         date_str = stamp.strftime(
             f"on the %#d{_date_suffix(int(stamp.strftime('%d')))}"
         )
-    return date_str + (" at " if date_str else "") + logical_time_repr(stamp, timezone)
+    date_str += " " * bool(date_str)
+    return date_str + "at " + logical_time_repr(stamp, timezone)
 
 
 def relative_day_str(stamp: Union[dt, Time], timezone: BaseTzInfo) -> str:
@@ -210,12 +213,29 @@ def replace_down(
         idx = {v: k for (k, v) in idx_to_attr.items()}[idx]
     dt_only = ["year", "month", "day"]
     for i in range(idx, -1, -1):
-        attr = idx_to_attr[i]
+        attr = cast(
+            Literal["year", "month", "day", "hour", "minute", "second", "microsecond"],
+            idx_to_attr[i],
+        )
         if attr in dt_only and not (
             isinstance(source_stamp, dt) and isinstance(dest_stamp, dt)
         ):
             raise TypeError(f"requested {attr} from Time object")
-        res = res.replace(**{attr: 0 if zero else getattr(source_stamp, attr)})
+        if isinstance(res, dt):
+            if attr == "year":
+                res = res.replace(year=0 if zero else getattr(source_stamp, attr))
+            elif attr == "month":
+                res = res.replace(month=0 if zero else getattr(source_stamp, attr))
+            elif attr == "day":
+                res = res.replace(day=0 if zero else getattr(source_stamp, attr))
+        if attr == "hour":
+            res = res.replace(hour=0 if zero else getattr(source_stamp, attr))
+        elif attr == "minute":
+            res = res.replace(minute=0 if zero else getattr(source_stamp, attr))
+        elif attr == "second":
+            res = res.replace(second=0 if zero else getattr(source_stamp, attr))
+        elif attr == "microsecond":
+            res = res.replace(microsecond=0 if zero else getattr(source_stamp, attr))
 
     return res
 

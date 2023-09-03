@@ -7,7 +7,7 @@ from core.utils.constants import testmogus_id
 
 class TestManageWakeup(Test):
     async def test_manage_wakeup(self) -> None:
-        data.wakeup.clear()  # wakeup is set at the beginning of all testse
+        data.wakeup.clear()  # wakeup is set at the beginning of all tests
 
         responses = await user_says("todo gamine", expected_responses=2)
         self.assert_equal(

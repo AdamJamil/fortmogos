@@ -29,8 +29,39 @@ async def set_daily(
         )
     )
     await ctx.reply(
-        f"<@{ctx.user_id}>'s daily reminder at "
+        f"<@{ctx.user_id}>'s daily reminder "
         f"{logical_dt_repr(reminder_time, tz)}"
+        f' to "{reminder_str}" has been set.'
+    )
+    await ctx.delete()
+
+
+async def set_weekly(
+    ctx: Context,
+    data: DataHandler,
+    reminder_time: Time,
+    day_of_week: str,
+    reminder_str: str,
+) -> None:
+    tz = data.timezones[ctx.user_id].tz
+    reminder_time = tz_convert_time(reminder_time, tz, utc)
+    reminder_dt = replace_down(now(), "hour", reminder_time)
+    while reminder_dt.strftime('%A').lower() != day_of_week:
+        reminder_dt += timedelta(days=1)
+    data.tasks.append(
+        PeriodicAlert(
+            reminder_str,
+            ctx.user_id,
+            ctx.channel_id,
+            timedelta(days=7),
+            reminder_dt,
+            "[weekly]",
+        )
+    )
+    capitalized_day = day_of_week[0].upper() + day_of_week[1:]
+    await ctx.reply(
+        f"<@{ctx.user_id}>'s weekly reminder "
+        f"{logical_dt_repr(reminder_time, tz)} on {capitalized_day}s"
         f' to "{reminder_str}" has been set.'
     )
     await ctx.delete()

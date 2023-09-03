@@ -8,16 +8,16 @@ if TYPE_CHECKING:
 
 
 class Context(ABC):
-    def content(self, *args) -> str:
+    def content(self) -> str:
         return ""
 
-    async def send(self, response: str, *args) -> None:
+    async def send(self, response: str) -> None:
         ...
 
-    async def reply(self, response: str, *args) -> None:
+    async def reply(self, response: str) -> None:
         ...
 
-    async def delete(self, *args) -> None:
+    async def delete(self) -> None:
         ...
 
     async def is_timezone_set(self) -> bool:

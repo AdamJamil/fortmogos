@@ -51,4 +51,4 @@ sep = Separator()
 
 
 todo_emoji = "📋"
-warning_emoji = "⚠"
+warning_emoji = "🥺"

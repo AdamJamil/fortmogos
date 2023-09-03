@@ -1,3 +1,4 @@
-from sqlalchemy.ext.declarative import declarative_base
+from typing import cast
+from sqlalchemy.ext.declarative import declarative_base  # type: ignore
 
-Base = declarative_base()
+Base: type = cast(type, declarative_base())

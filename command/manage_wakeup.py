@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from typing import cast
 from datetime import time as Time
 import pytz
 from pytz import utc
@@ -52,7 +51,7 @@ async def enable(ctx: Context, data: DataHandler) -> None:
             "`wakeup <time>` changes the time, `wakeup set` resets the channel, and "
             "`wakeup disable` shuts it up."
         )
-    elif cast(bool, data.wakeup[user].disabled):
+    elif data.wakeup[user].disabled:
         await ctx.reply("Re-enabled your daily todo reminders.")
     else:
         await ctx.reply("Already enabled, galaxy brain.")
@@ -73,7 +72,7 @@ async def disable(ctx: Context, data: DataHandler) -> None:
             "You can undo this with `wakeup enable`."
         )
         await ctx.delete()
-    elif cast(bool, data.wakeup[user].disabled):
+    elif data.wakeup[user].disabled:
         await ctx.reply("It's already disabled, galaxy brain.")
         await ctx.delete()
     else:
@@ -85,7 +84,7 @@ async def disable(ctx: Context, data: DataHandler) -> None:
         data.wakeup[user] = Wakeup(
             user,
             data.wakeup[user].time,
-            cast(int, data.wakeup[user].channel),
+            data.wakeup[user].channel,
             disabled=True,
         )
 
@@ -124,9 +123,7 @@ async def change_wakeup_time(
         )
         await ctx.delete()
     else:
-        data.wakeup[user] = Wakeup(
-            user, new_wakeup, cast(int, data.wakeup[user].channel)
-        )
+        data.wakeup[user] = Wakeup(user, new_wakeup, data.wakeup[user].channel)
         user_time = logical_time_repr(new_wakeup, data.timezones[user].tz)
         await ctx.reply(f"Got it, <@{user}>, your wakeup time was set to {user_time}.")
         await ctx.delete()

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from collections import deque
-from itertools import product
+from itertools import chain, product
 from typing import (
     Any,
     Callable,
@@ -14,7 +14,7 @@ from typing import (
     Sequence,
     Tuple,
     TypeVar,
-    Union,
+    cast,
     overload,
 )
 
@@ -28,6 +28,12 @@ from core.context import Context
 from core.data.handler import DataHandler
 from core.timer import now
 from core.utils.time import parse_duration, replace_down
+
+
+ARGS = TypeVarTuple("ARGS")
+T1 = TypeVar("T1")
+T2 = TypeVar("T2")
+RES = Coroutine[Any, Any, None]
 
 
 def edit_distance_one(x: str, y: str) -> bool:
@@ -54,114 +60,94 @@ def almost_number(x: str) -> bool:
     return sum(1 for c in x if c.isnumeric()) == len(x) - 1
 
 
-ARGS = TypeVarTuple("ARGS")
-T1 = TypeVar("T1")
+def res_key(res: List[Warn] | Tuple[Any, ...] | None) -> Tuple[float, int]:
+    return (
+        3
+        if res is None
+        else 1 + bool(res and str(res[0]).startswith("Ran out"))
+        if isinstance(res, list)
+        else 0,
+        len(res) if isinstance(res, list) else 0,
+    )
 
 
 class Expr(ABC):
     @abstractmethod
-    def match(self, x: Deque[str]) -> Union[Tuple[Any, ...], Warn, None]:
+    def match(self, x: Deque[str]) -> Tuple[Any, ...] | List[Warn] | None:
         ...
 
 
-class ChainLike:
+class Chain(Generic[Unpack[ARGS]]):
     exprs: List[Expr]
-    f: Optional[Callable]
+    f: Optional[Callable[[Context, DataHandler], RES]]
     needs_tz: bool = True
 
-
-class Chain(Generic[Unpack[ARGS]], ChainLike):
     def __init__(self, exprs: Optional[List[Expr]] = None) -> None:
         self.exprs: List[Expr] = exprs or []
-        self.f: Optional[Callable] = None
 
     @overload
-    def __rshift__(self, o: "Expr0") -> Chain[Unpack[ARGS]]:
+    def __rshift__(self, o: Expr0) -> Chain[Unpack[ARGS]]:
         ...
 
     @overload
-    def __rshift__(self, o: "Expr1"[T1]) -> Chain[Unpack[ARGS], T1]:
+    def __rshift__(self, o: Expr1[T1]) -> Chain[Unpack[ARGS], T1]:
+        ...
+
+    @overload
+    def __rshift__(self, o: Expr2[T1, T2]) -> Chain[Unpack[ARGS], T1, T2]:
         ...
 
     @overload
     def __rshift__(
         self,
-        o: Callable[[Context, DataHandler, Unpack[ARGS]], Coroutine[Any, Any, None]],
-    ) -> Command:
+        o: Callable[[Context, DataHandler, Unpack[ARGS]], RES],
+    ) -> Command[Unpack[ARGS]]:
         ...
 
-    def __rshift__(
-        self, o: Union["Expr0", "Expr1"[T1], Callable]
-    ) -> Union[Chain[Unpack[ARGS]], Chain[Unpack[ARGS], T1], Command]:
-        res: Union[
-            Chain[Unpack[ARGS]],
-            Chain[Unpack[ARGS], T1],
-            Command,
-        ]
-        if isinstance(o, Expr0):
-            res = Chain[Tuple[Unpack[ARGS]]](self.exprs + [o])
-        elif isinstance(o, Expr1):
-            res = Chain[Tuple[Unpack[ARGS], T1]](self.exprs + [o])
-        else:
-            res = Command(self.exprs, o, self.needs_tz)
-        res.needs_tz = self.needs_tz
-        return res
-
-
-class EmptyChain(ChainLike):
-    """
-    This replicates the behavior of Chain[Tuple[()]], without the weird bug where ARGS
-    will have some extra argument at the beginning.
-    """
-
-    def __init__(self, exprs: Optional[List[Expr]] = None) -> None:
-        self.exprs: List[Expr] = exprs or []
-        self.f: Optional[Callable] = None
-
-    @overload
-    def __rshift__(self, o: "Expr0") -> EmptyChain:
-        ...
-
-    @overload
-    def __rshift__(self, o: "Expr1"[T1]) -> Chain[T1]:
-        ...
-
-    @overload
     def __rshift__(
         self,
-        o: Callable[[Context, DataHandler], Coroutine[Any, Any, None]],
-    ) -> Command:
-        ...
-
-    def __rshift__(
-        self, o: Union[Expr0, Expr1[T1], Callable]
-    ) -> Union[EmptyChain, Chain[T1], Command]:
-        res: Union[EmptyChain, Chain[T1], Command]
+        o: Expr0
+        | Expr1[T1]
+        | Expr2[T1, T2]
+        | Callable[[Context, DataHandler, Unpack[ARGS]], RES],
+    ) -> (
+        Chain[Unpack[ARGS]]
+        | Chain[Unpack[ARGS], T1]
+        | Chain[Unpack[ARGS], T1, T2]
+        | Command[Unpack[ARGS]]
+    ):
+        res: (
+            Chain[Unpack[ARGS]]
+            | Chain[Unpack[ARGS], T1]
+            | Chain[Unpack[ARGS], T1, T2]
+            | Command[Unpack[ARGS]]
+        )
         if isinstance(o, Expr0):
-            res = EmptyChain(self.exprs + [o])
+            res = Chain[Unpack[ARGS]](self.exprs + [o])
         elif isinstance(o, Expr1):
-            res = Chain[Tuple[T1]](self.exprs + [o])
+            res = Chain[Unpack[ARGS], T1](self.exprs + [o])
+        elif isinstance(o, Expr2):
+            res = Chain[Unpack[ARGS], T1, T2](self.exprs + [o])
         else:
-            res = Command(self.exprs, o, self.needs_tz)
+            res = Command[Unpack[ARGS]](self.exprs, o, self.needs_tz)
         res.needs_tz = self.needs_tz
         return res
 
 
-class NO_TZ(EmptyChain):
+class NO_TZ(Chain[()]):
     def __init__(self, exprs: List[Expr] | None = None) -> None:
         self.exprs: List[Expr] = exprs or []
-        self.f: Optional[Callable] = None
 
     needs_tz: bool = False
 
 
-class Command:
+class Command(Generic[Unpack[ARGS]]):
     """Represents a completed command"""
 
     def __init__(
         self,
         exprs: List[Expr],
-        f: Callable[[Unpack[ARGS]], Coroutine[Any, Any, None]],
+        f: Callable[[Context, DataHandler, Unpack[ARGS]], RES],
         needs_tz: bool,
     ) -> None:
         self.exprs = exprs
@@ -173,7 +159,7 @@ class Command:
             msg = msg.replace("  ", " ")
         dq = deque(msg.split(" "))
         args: List[Any] = []
-        warnings = []
+        warnings: List[Warn] = []
         for expr in self.exprs:
             if not dq:
                 warnings.append(Warn("Ran out of tokens while parsing."))
@@ -184,11 +170,10 @@ class Command:
             elif isinstance(res, tuple):
                 args.extend(res)
             else:
-                return ParsedCommand(self.exprs, self.f, self.needs_tz, None)
+                return ParsedCommand(self.f, self.needs_tz, None)
         if dq:
             warnings.append(Warn("Unexpected tokens after parsing."))
         return ParsedCommand(
-            self.exprs,
             self.f,
             self.needs_tz,
             warnings or tuple(args),
@@ -201,12 +186,10 @@ class Command:
 class ParsedCommand:
     def __init__(
         self,
-        exprs: List[Expr],
-        f: Callable[..., Coroutine[Any, Any, None]],
+        f: Callable[..., RES],
         needs_tz: bool,
-        res: Union[None, List[Warn], Tuple],
+        res: List[Warn] | Tuple[Any, ...] | None,
     ) -> None:
-        self.exprs = exprs
         self.f = f
         self.needs_tz = needs_tz
         self.res = res
@@ -215,14 +198,13 @@ class ParsedCommand:
         return f"Parsed to function {self.f.__name__}: {self.res}"
 
 
-class Expr0(Expr, EmptyChain):
+class Expr0(Expr, Chain[()]):
     def __init__(self) -> None:
         # calling super init kills mypy...
         self.exprs: List[Expr] = [self]
-        self.f: Optional[Callable] = None
 
     @abstractmethod
-    def match(self, x: Deque[str]) -> Union[Tuple[()], Warn, None]:
+    def match(self, x: Deque[str]) -> Tuple[()] | List[Warn] | None:
         ...
 
 
@@ -230,10 +212,19 @@ class Expr1(Chain[T1], Expr):
     def __init__(self) -> None:
         # calling super init kills mypy...
         self.exprs: List[Expr] = [self]
-        self.f: Optional[Callable] = None
 
     @abstractmethod
-    def match(self, x: Deque[str]) -> Union[Tuple[T1], Warn, None]:
+    def match(self, x: Deque[str]) -> Tuple[T1] | List[Warn] | None:
+        ...
+
+
+class Expr2(Chain[T1, T2], Expr):
+    def __init__(self) -> None:
+        # calling super init kills mypy...
+        self.exprs: List[Expr] = [self]
+
+    @abstractmethod
+    def match(self, x: Deque[str]) -> Tuple[T1, T2] | List[Warn] | None:
         ...
 
 
@@ -242,7 +233,7 @@ class Warn(str):
 
 
 class Literal(Expr0):
-    def __init__(self, *_val: Union[str, Sequence[str]]) -> None:
+    def __init__(self, *_val: str | Sequence[str]) -> None:
         super().__init__()
         val: List[List[str]] = [
             [chunk.lower()] if isinstance(chunk, str) else [x.lower() for x in chunk]
@@ -252,14 +243,14 @@ class Literal(Expr0):
 
     def match_word(
         self, x: Deque[str], actual: str, expect: str
-    ) -> Union[Tuple[()], Warn, None]:
+    ) -> Tuple[()] | Warn | None:
         """Matches a single word from expected/actual strings."""
         if edit_distance_one(actual, expect):
             x.popleft()
             return Warn(f"Did you mean `{expect}` instead of `{actual}`?")
         return () if actual == expect and x.popleft() else None
 
-    def match_option(self, option: str, x: Deque[str]) -> Union[Tuple[()], Warn, None]:
+    def match_option(self, option: str, x: Deque[str]) -> Tuple[()] | List[Warn] | None:
         """Matches an entire phrase."""
         tokens = option.split(" ")
         initial_tokens = len(x)
@@ -271,24 +262,17 @@ class Literal(Expr0):
             elif match is None:
                 return None
         if initial_tokens < len(tokens):
-            return None if warnings else Warn("Ran out of tokens while parsing.")
-        return warnings[0] if warnings else ()
+            return None if warnings else [Warn("Ran out of tokens while parsing.")]
+        return warnings or ()
 
-    def match(self, x: Deque[str]) -> Union[Tuple[()], Warn, None]:
+    def match(self, x: Deque[str]) -> Tuple[()] | List[Warn] | None:
         """Tries all options"""
-        best, dq_pop = max(
+        best, dq_pop = min(
             (
                 (self.match_option(option, xc := deque(x)), len(x) - len(xc))
                 for option in self.options
             ),
-            key=lambda res: (
-                2
-                if isinstance(res[0], tuple)
-                else 1
-                if isinstance(res[0], Warn)
-                else 0,
-                res[1],
-            ),
+            key=lambda x: res_key(x[0]),
         )
         for _ in range(dq_pop):
             x.popleft()
@@ -299,10 +283,10 @@ class Literal(Expr0):
 
 
 class Num(Expr1[int]):
-    def match(self, x: Deque[str]) -> Union[Tuple[int], Warn, None]:
+    def match(self, x: Deque[str]) -> Tuple[int] | List[Warn] | None:
         if almost_number(x[0]):
             res = x.popleft()
-            return Warn(f"Expected number; got `{res}`.")
+            return [Warn(f"Expected number; got `{res}`.")]
         return (int(val),) if x and x[0].isnumeric() and (val := x.popleft()) else None
 
     def __repr__(self) -> str:
@@ -310,7 +294,7 @@ class Num(Expr1[int]):
 
 
 class DurationExpr(Expr1[dt]):
-    def match(self, x: Deque[str]) -> Union[Tuple[dt], Warn, None]:
+    def match(self, x: Deque[str]) -> Tuple[dt] | List[Warn] | None:
         """
         Gets the longest prefix possible that matches a duration.
         """
@@ -333,13 +317,13 @@ class DurationExpr(Expr1[dt]):
             if not first[0].isnumeric():
                 return None
             if not first.isnumeric():  # this maybe has units; try to parse them
-                return Warn(parse_duration(first, curr_time))
+                return [Warn(parse_duration(first, curr_time))]
             # first is definitely a number now
             if not len(x):
-                return Warn(f"Didn't find a time unit after `{first}`")
+                return [Warn(f"Didn't find a time unit after `{first}`")]
             # at least two tokens, first one is a number, second should've be a unit
             # (or more), however this must've failed as best is -1
-            return Warn(parse_duration(first + x.popleft(), curr_time))
+            return [Warn(parse_duration(first + x.popleft(), curr_time))]
 
         for _ in range(best[0] + 1):  # consumed tokens
             x.popleft()
@@ -350,7 +334,7 @@ class DurationExpr(Expr1[dt]):
 
 
 class TimeExpr(Expr1[Time]):
-    def match(self, x: Deque[str]) -> Union[Tuple[Time], Warn, None]:
+    def match(self, x: Deque[str]) -> Tuple[Time] | List[Warn] | None:
         """
         Extracts a time from the message.
         Valid format examples: 4pm, 4 pm, 420pm, 420 pm, 4:20pm, 4:20 pm
@@ -365,7 +349,7 @@ class TimeExpr(Expr1[Time]):
         if first.isnumeric():
             num = first
             if not x:
-                return Warn("Ran out of tokens while parsing.")
+                return [Warn("Ran out of tokens while parsing.")]
             time_sig = x.popleft().lower()  # am/pm
         else:
             if len(first) < 3:
@@ -382,20 +366,79 @@ class TimeExpr(Expr1[Time]):
         minute = 0 if len(num) <= 2 else int(num[-2:])
 
         if hour > 12:
-            return Warn(f"Found invalid hour: {hour}")
+            return [Warn(f"Found invalid hour: {hour}")]
         if minute >= 60:
-            return Warn(f"Found invalid minute: {minute}")
+            return [Warn(f"Found invalid minute: {minute}")]
         if hour < 0 or minute < 0:
-            return Warn("wtf")
+            return [Warn("wtf")]
 
         if time_sig not in ("am", "pm"):
-            return Warn(f"Expected time signature `am` or `pm`, found {time_sig}.")
+            return [Warn(f"Expected time signature `am` or `pm`, found {time_sig}.")]
 
         hour = (hour % 12) + 12 * (time_sig == "pm")
         return (Time(hour=hour, minute=minute, second=0, microsecond=0),)
 
     def __repr__(self) -> str:
         return "Time"
+
+
+class WeeklyTimeExpr(Expr2[Time, str]):
+    def match_option(
+        self,
+        x: Deque[str],
+        opt: Chain[Time],
+    ) -> Tuple[Time] | List[Warn] | None:
+        res = ()
+        warnings: List[Warn] = []
+        for expr in opt.exprs:
+            curr = expr.match(x)
+            if curr is None:
+                return None
+            elif isinstance(curr, List):
+                warnings += curr
+            else:
+                res += curr
+        return warnings or cast(Tuple[Time], res)
+
+    def match(self, x: Deque[str]) -> Tuple[Time, str] | List[Warn] | None:
+        """
+        Gets a day and time of the week from an expression.
+        Valid examples: Monday 2PM, 3:04AM saturday.
+        """
+        if len(x) == 1:
+            return [Warn("Ran out of tokens while parsing.")]
+        days = {
+            "monday",
+            "tuesday",
+            "wednesday",
+            "thursday",
+            "friday",
+            "saturday",
+            "sunday",
+        }
+        options = chain.from_iterable(
+            ((Literal(day) >> TimeExpr(), day), (TimeExpr() >> Literal(day), day))
+            for day in days
+        )
+        best_time, best_day, dq_pop = min(
+            (
+                (
+                    self.match_option(xc := deque(x), option[0]),
+                    option[1],
+                    len(x) - len(xc),
+                )
+                for option in options
+            ),
+            key=lambda x: res_key(x[0]),
+        )
+        for _ in range(dq_pop):
+            x.popleft()
+        if isinstance(best_time, tuple):
+            return best_time[0], best_day
+        return best_time
+
+    def __repr__(self) -> str:
+        return "WeekOffset"
 
 
 class TimeZoneExpr(Expr1[BaseTzInfo]):
@@ -429,14 +472,14 @@ class TimeZoneExpr(Expr1[BaseTzInfo]):
         "UTC",
     ]
 
-    def match(self, x: Deque[str]) -> Union[Tuple[BaseTzInfo], Warn, None]:
+    def match(self, x: Deque[str]) -> Tuple[BaseTzInfo] | List[Warn] | None:
         best: Tuple[float, Optional[BaseTzInfo]] = 10**20, None
         if x[0].startswith("UTC"):
             tz_str = x.popleft()
             try:
                 offset = int(tz_str[3:])
             except TypeError:
-                return Warn(f"Could not parse offset {tz_str[3:]}.")
+                return [Warn(f"Could not parse offset {tz_str[3:]}.")]
             else:
                 utc_now = pytz.utc.localize(now())
 
@@ -464,11 +507,11 @@ class TimeZoneExpr(Expr1[BaseTzInfo]):
                     if best[0] < 20 * 60:
                         break
                 return (
-                    Warn("Did not find any matching timezones.")
+                    [Warn("Did not find any matching timezones.")]
                     if best[1] is None
                     else (best[1],)
                 )
-        elif isinstance(res := TimeExpr().match(xc := deque(x)), (tuple, Warn)):
+        elif isinstance(res := TimeExpr().match(xc := deque(x)), (tuple, list)):
             for _ in range(len(x) - len(xc)):
                 x.popleft()
             if isinstance(res, tuple):
@@ -494,27 +537,30 @@ class TimeZoneExpr(Expr1[BaseTzInfo]):
                         break
 
                 return (
-                    Warn("Did not find any matching timezones.")
+                    [Warn("Did not find any matching timezones.")]
                     if best[1] is None
                     else (best[1],)
                 )
             return res
         else:  # this is a region name
+            tz_str = ""
             try:
                 return (pytz.timezone(tz_str := x.popleft()),)
             except Exception:
-                return Warn(
-                    f"{tz_str} is not a valid region, UTC offset, or time. Try Google "
-                    'to find your region name, which might look like "US/Eastern", or '
-                    "try providing your local time or UTC offset."
-                )
+                return [
+                    Warn(
+                        f"{tz_str} is not a valid region, UTC offset, or time. Try "
+                        "Google to find your region name, which might look like "
+                        '"US/Eastern", or try providing your local time or UTC offset.'
+                    )
+                ]
 
     def __repr__(self) -> str:
         return "TimeZone"
 
 
 class KleeneStar(Expr1[str]):
-    def match(self, x: Deque[str]) -> Union[Tuple[str], Warn, None]:
+    def match(self, x: Deque[str]) -> Tuple[str] | List[Warn] | None:
         res = x.popleft()
         while x:
             res += " " + x.popleft()
@@ -525,23 +571,17 @@ class KleeneStar(Expr1[str]):
 
 
 class ArgParser:
-    def __init__(self, *commands: Command) -> None:
+    def __init__(
+        self,
+        *commands: Command[()]
+        | Command[Any]
+        | Command[Any, Any]
+        | Command[Any, Any, Any],
+    ) -> None:
         self.commands = list(commands)
 
     def parse_message(self, msg: str) -> ParsedCommand:
         return min(
             (command.parse(msg) for command in self.commands),
-            key=lambda parsed_command: (
-                2
-                if parsed_command.res is None
-                else 1
-                + 0.5
-                * bool(
-                    parsed_command.res
-                    and str(parsed_command.res[0]).startswith("Ran out")
-                )
-                if isinstance(parsed_command.res, list)
-                else 0,
-                len(parsed_command.res) if isinstance(parsed_command.res, list) else 0,
-            ),
+            key=lambda parsed_command: res_key(parsed_command.res),
         )

@@ -3,7 +3,6 @@ import asyncio
 from typing import List, Literal, Tuple, Union, overload
 from unittest.mock import MagicMock
 
-from pytz import utc
 from disc.receive import on_message, on_reaction_add
 from core.data.writable import Timezone, Wakeup
 from core.timer import now
@@ -17,7 +16,11 @@ test_channel_id = 2394823904
 
 
 def reset_data() -> None:
-    now.suppose_it_is(dt.now(tz=utc).replace(tzinfo=None))
+    now.suppose_it_is(
+        dt(
+            hour=0, minute=0, second=0, microsecond=0, day=2, month=9, year=2020
+        ).replace(tzinfo=None)
+    )
     now.set_speed(1)
 
     from core.start import data
@@ -256,7 +259,6 @@ async def get_messages_at_time(
     )
 
     initial_msgs = set(messages)
-
     now.suppose_it_is(moment)
     await asyncio.sleep(0.055)
 

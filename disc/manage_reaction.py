@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Union, cast
+from typing import Union
 
 from discord import Member, Reaction, User
 from core.data.writable import UserTask
@@ -17,4 +17,4 @@ async def manage_reaction(reaction: Reaction, user: Union[User, Member]):
                 f"Got it, <@{user.id}>. Your reminder to {alert.msg} "
                 "was added to your todo list."
             )
-            data.user_tasks.append(UserTask(user.id, cast(str, alert.msg)))
+            data.user_tasks.append(UserTask(user.id, alert.msg))

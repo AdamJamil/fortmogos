@@ -1,4 +1,3 @@
-from typing import cast
 from core.context import Context
 from core.data.writable import UserTask
 from core.data.handler import DataHandler
@@ -14,9 +13,9 @@ async def add_task(ctx: Context, data: DataHandler, desc: str) -> None:
 
 async def show_tasks(ctx: Context, data: DataHandler) -> None:
     res = "\n".join(
-        f"{i+1}) {cast(str, y.desc)}"
+        f"{i+1}) {y.desc}"
         for i, y in enumerate(
-            x for x in data.user_tasks if cast(int, x.user_id) == ctx.user_id
+            x for x in data.user_tasks if x.user_id == ctx.user_id
         )
     )
     await ctx.reply(
@@ -28,7 +27,7 @@ async def show_tasks(ctx: Context, data: DataHandler) -> None:
 
 
 async def delete_task(ctx: Context, data: DataHandler, index: int) -> None:
-    user_tasks = [x for x in data.user_tasks if cast(int, x.user_id) == ctx.user_id]
+    user_tasks = [x for x in data.user_tasks if x.user_id == ctx.user_id]
     if index <= 0 or index > len(user_tasks):
         await ctx.reply(f"Hey <@{ctx.user_id}>, you're an idiot :D")
     else:

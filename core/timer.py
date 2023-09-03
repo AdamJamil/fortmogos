@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import asyncio
 from datetime import datetime as dt, timedelta
 from typing import TYPE_CHECKING
@@ -48,14 +50,16 @@ class Timer:
         while "among":
             print(f"It's currently {' '.join(str(now()).split(' ')[1:])}")
 
-            async def should_keep_task(task: "Task") -> bool:
+            async def should_keep_task(task: Task) -> bool:
                 return not await task.maybe_activate(self.timer) or task.repeatable
 
-            async def maybe_activate(_: int, task: "Task") -> None:
+            async def maybe_activate(_: int, task: Task) -> None:
                 await task.maybe_activate(self.timer)
 
             await self.data.tasks.async_filter(should_keep_task)
             await self.data.wakeup.async_lambda(maybe_activate)
 
-            await asyncio.sleep(max(0, 0.05 - (now() - self.timer).total_seconds()))
+            await asyncio.sleep(
+                min(0.05, max(0, 0.05 - (now() - self.timer).total_seconds()))
+            )
             self.timer = now()

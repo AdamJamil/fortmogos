@@ -1,10 +1,8 @@
 from __future__ import annotations
 
-from typing import Any
 from command.misc import hijack, respond_test
 from core.context import Context
 from core.utils.exceptions import MissingTimezoneException
-
 from core.utils.parse import (
     NO_TZ,
     ArgParser,
@@ -14,6 +12,7 @@ from core.utils.parse import (
     Num,
     TimeExpr,
     TimeZoneExpr,
+    WeeklyTimeExpr,
 )
 from command.manage_wakeup import (
     change_wakeup_time,
@@ -26,7 +25,7 @@ from command.help import help_reminder
 from command.manage_reminder import delete_reminder, show_reminders
 from command.manage_task import add_task, delete_task, show_tasks
 from command.manage_timezone import manage_timezone
-from command.set_reminder import set_daily, set_in
+from command.set_reminder import set_daily, set_in, set_weekly
 
 
 SHOW = ("list", "show", "see", "view")
@@ -51,24 +50,14 @@ class CommandProcessor:
             Literal("wakeup enable") >> enable,
             Literal("wakeup set") >> set_channel,
             Literal("wakeup") >> TimeExpr() >> change_wakeup_time,
+            Literal("daily") >> TimeExpr() >> KleeneStar() >> set_daily,
+            Literal("weekly") >> WeeklyTimeExpr() >> KleeneStar() >> set_weekly,
+            Literal("in") >> DurationExpr() >> KleeneStar() >> set_in,
         )
-
-        # mypy has a stroke when chaining more than one Expr1...
-        daily_cmd: Any = Literal("daily") >> TimeExpr()
-        shit: Any = KleeneStar()
-        daily_cmd >>= shit
-        daily_cmd >>= set_daily
-
-        in_cmd: Any = Literal("in") >> DurationExpr()
-        shit2: Any = KleeneStar()
-        in_cmd >>= shit2
-        in_cmd >>= set_in
-
-        self.arg_parser.commands.extend((daily_cmd, in_cmd))
 
     async def parse_and_respond(self, ctx: Context) -> None:
         from core.start import data
-
+        
         parsed_command = self.arg_parser.parse_message(ctx.content())
 
         if parsed_command.needs_tz and not await ctx.is_timezone_set():

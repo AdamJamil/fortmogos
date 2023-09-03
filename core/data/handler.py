@@ -119,9 +119,9 @@ class AtomicDBList(list[T]):
     def __setitem__(self, index: slice, item: Iterable[T]) -> None:
         ...
 
-    def __setitem__(self, index, item) -> None:
+    def __setitem__(self, index: SupportsIndex | slice, item: T | Iterable[T]) -> None:
         with self.lock:
-            if isinstance(index, slice):
+            if isinstance(index, slice) or isinstance(item, Iterable):
                 raise TypeError("why")
             else:
                 self.session.delete(self[index])
@@ -165,7 +165,7 @@ class AtomicDBDict(dict[K, V]):
             super().__setitem__(key, value)
             session.commit()
 
-    def __delitem__(self, key):
+    def __delitem__(self, key: K):
         with self.lock:
             if key not in self:
                 return
@@ -202,32 +202,39 @@ class DataHandler:
         self.populate_data()
 
     def populate_data(self) -> None:
-        if hasattr(self, "tasks") and self.tasks is not None:
+        if hasattr(self, "tasks") and self.tasks is not None:  # type: ignore
             return
         self.tasks: AtomicDBList[Task] = AtomicDBList(
             [
                 x
                 for subcls in subclasses_of(Task)
                 if hasattr(subcls, "__tablename__") and subcls != Wakeup
-                for x in (session.query(subcls)).all()
+                for x in (session.query(subcls)).all()  # type: ignore
             ]
         )
         self.timezones: AtomicDBDict[int, Timezone] = AtomicDBDict(
-            {cast(int, tz._id): tz for tz in session.query(Timezone).all()}, tz=True
+            {
+                cast(int, tz._id): tz  # type: ignore
+                for tz in session.query(Timezone).all()  # type: ignore
+            },
+            tz=True,
         )
         self.user_tasks: AtomicDBList[UserTask] = AtomicDBList(
-            session.query(UserTask).all()
+            session.query(UserTask).all()  # type: ignore
         )
         self.wakeup: AtomicDBDict[int, Wakeup] = AtomicDBDict(
-            {cast(int, wakeup.user): wakeup for wakeup in session.query(Wakeup).all()}
+            {
+                cast(int, wakeup.user): wakeup  # type: ignore
+                for wakeup in session.query(Wakeup).all()  # type: ignore
+            }
         )
-        task_remove = []
+        task_remove: List[Alert] = []
         for task in self.tasks:
             if isinstance(task, Alert) and task.user in banned_users:
                 task_remove.append(task)
         for rem in task_remove:
             self.tasks.remove(rem)
-        user_task_remove = []
+        user_task_remove: List[UserTask] = []
         for task in self.user_tasks:
             if task.user_id in banned_users:
                 user_task_remove.append(task)

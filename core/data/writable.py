@@ -8,7 +8,7 @@ from typing import Any, Dict, cast
 import pytz
 from core.timer import now
 from core.utils.exceptions import MissingTimezoneException
-from core.utils.time import logical_dt_repr, logical_time_repr, replace_down, time_dist
+from core.utils.time import logical_dt_repr, logical_time_repr, replace_down
 from core.utils.constants import client, todo_emoji
 from sqlalchemy import Boolean, Column, Float, Integer, String
 from sqlalchemy.orm import reconstructor  # type: ignore
@@ -63,7 +63,7 @@ class Task(Immutable):
         self._activation_threshold = timedelta(seconds=30)
         self.repeatable = False
 
-    @reconstructor
+    @reconstructor  # type: ignore
     def init_on_load(self) -> None:
         self._activation_threshold = timedelta(seconds=30)
         self.repeatable = False
@@ -103,7 +103,7 @@ class RepeatableTask(Task):
         self._last_activated = now() - timedelta(days=100)
         object.__setattr__(self, "repeatable", True)
 
-    @reconstructor
+    @reconstructor  # type: ignore
     def init_on_load(self) -> None:
         super().init_on_load()
         self._repeat_activation_threshold = timedelta(seconds=60)
@@ -140,17 +140,15 @@ class PeriodicTask(RepeatableTask):
     ) -> None:
         super().__init__(**kwargs)
         self.periodicity = periodicity
-        self._periodicity = periodicity.total_seconds()  # type: ignore
+        self._periodicity = periodicity.total_seconds()
         self.first_activation = first_activation
-        self._first_activation = first_activation.timestamp()  # type: ignore
+        self._first_activation = first_activation.timestamp()
 
-    @reconstructor
+    @reconstructor  # type: ignore
     def init_on_load(self) -> None:
         super().init_on_load()
-        self.periodicity = timedelta(seconds=self._periodicity)  # type: ignore
-        self.first_activation = dt.fromtimestamp(
-            self._first_activation, tz=None  # type: ignore
-        )
+        self.periodicity = timedelta(seconds=float(self._periodicity))
+        self.first_activation = dt.fromtimestamp(float(self._first_activation), tz=None)
 
     def get_next_activation(self, curr_time: dt) -> dt:
         # s + x * p >= c
@@ -165,9 +163,7 @@ class PeriodicTask(RepeatableTask):
         next_activation = self.get_next_activation(curr_time)
         prev_activation = next_activation - self.periodicity
         return (
-            timedelta()
-            <= time_dist(prev_activation.time(), curr_time.time())
-            <= self._activation_threshold
+            timedelta() <= (curr_time - prev_activation) <= self._activation_threshold
         )
 
 
@@ -185,7 +181,7 @@ class SingleTask(Task):
         self.activation = activation
         self._activation = activation.timestamp()  # type: ignore
 
-    @reconstructor
+    @reconstructor  # type: ignore
     def init_on_load(self) -> None:
         super().init_on_load()
         self.activation = dt.fromtimestamp(self._activation)  # type: ignore
@@ -212,7 +208,7 @@ class Alert(Task):
     channel_id = Column(Integer)
     descriptor_tag = Column(String)
     _reminder_str: str = (
-        "Hey <@{user}>, this is a reminder to {msg}. It's currently {x}."
+        "Hey <@{user}>, this is a reminder to {msg}."
     )
 
     def __init__(
@@ -229,7 +225,7 @@ class Alert(Task):
         self.channel_id = channel_id
         self.descriptor_tag = descriptor_tag
 
-    @reconstructor
+    @reconstructor  # type: ignore
     def init_on_load(self) -> None:
         super().init_on_load()
 
@@ -245,7 +241,7 @@ class Alert(Task):
             msg = self._reminder_str.format(
                 user=self.user,
                 msg=self.msg,
-                x=logical_dt_repr(now(), data.timezones[cast(int, self.user)].tz),
+                x=logical_dt_repr(now(), data.timezones[self.user].tz),
             )
         except MissingTimezoneException:
             msg = self._reminder_str.format(
@@ -255,9 +251,7 @@ class Alert(Task):
             )
 
         try:
-            res = await client.get_partial_messageable(cast(int, self.channel_id)).send(
-                msg
-            )
+            res = await client.get_partial_messageable(self.channel_id).send(msg)
             await res.add_reaction(todo_emoji)
             data.reminder_msgs[cast(int, self.user), res.content] = self  # type: ignore
         except Exception:
@@ -269,7 +263,7 @@ class Alert(Task):
         ...
 
 
-class PeriodicAlert(Alert, PeriodicTask, Base):
+class PeriodicAlert(Alert, PeriodicTask, Base):  # type: ignore
     """Sends an alert at some periodicity"""
 
     __tablename__ = "periodic_alert"
@@ -292,7 +286,7 @@ class PeriodicAlert(Alert, PeriodicTask, Base):
             first_activation=first_activation,  # type: ignore
         )
 
-    @reconstructor
+    @reconstructor  # type: ignore
     def init_on_load(self) -> None:
         super().init_on_load()
 
@@ -302,20 +296,20 @@ class PeriodicAlert(Alert, PeriodicTask, Base):
 
         if (self.periodicity - timedelta(days=1)).total_seconds() <= 5:
             time_str = logical_time_repr(
-                self.first_activation, data.timezones[cast(int, self.user)].tz
+                self.first_activation, data.timezones[self.user].tz
             )
             return f"your daily reminder at {time_str} to {self.msg}"
 
         if (self.periodicity - timedelta(days=7)).total_seconds() <= 5:
             time_str = logical_time_repr(
-                self.first_activation, data.timezones[cast(int, self.user)].tz
+                self.first_activation, data.timezones[self.user].tz
             )
             return f"your weekly reminder at {time_str} to {self.msg}"
 
         raise NotImplementedError(f"The periodicity {self.periodicity} is unknown.")
 
 
-class SingleAlert(Alert, SingleTask, Base):
+class SingleAlert(Alert, SingleTask, Base):  # type: ignore
     """Sends only a single alert"""
 
     __tablename__ = "single_alert"
@@ -336,7 +330,7 @@ class SingleAlert(Alert, SingleTask, Base):
             activation=activation,  # type: ignore
         )
 
-    @reconstructor
+    @reconstructor  # type: ignore
     def init_on_load(self) -> None:
         super().init_on_load()
 
@@ -344,13 +338,11 @@ class SingleAlert(Alert, SingleTask, Base):
     def full_desc(self) -> str:
         from core.start import data
 
-        time_str = logical_dt_repr(
-            self.activation, data.timezones[cast(int, self.user)].tz
-        )
+        time_str = logical_dt_repr(self.activation, data.timezones[self.user].tz)
         return f"your reminder at {time_str} to {self.msg}"
 
 
-class Timezone(Base):
+class Timezone(Base):  # type: ignore
     """
     Represents the timezone of a single user.
     """
@@ -365,12 +357,12 @@ class Timezone(Base):
         self._tz = tz
         self.tz = pytz.timezone(self._tz)
 
-    @reconstructor
+    @reconstructor  # type: ignore
     def init_on_load(self) -> None:
-        self.tz = pytz.timezone(cast(str, self._tz))
+        self.tz = pytz.timezone(self._tz)
 
 
-class UserTask(Base):
+class UserTask(Base):  # type: ignore
     """
     A self-described user task. Appears in todo list.
     """
@@ -388,7 +380,7 @@ class UserTask(Base):
         self.completed = False
 
 
-class Wakeup(RepeatableTask, Base):
+class Wakeup(RepeatableTask, Base):  # type: ignore
     """
     When the user wants to see their todo list.
     """
@@ -410,28 +402,24 @@ class Wakeup(RepeatableTask, Base):
         self.channel = channel
         self.disabled = disabled
 
-    @reconstructor
+    @reconstructor  # type: ignore
     def init_on_load(self) -> None:
         super(Wakeup, self).init_on_load()
-        self.time = Time(
-            hour=cast(int, self._time) // 3600, minute=cast(int, self._time) % 60
-        )
+        self.time = Time(hour=self._time // 3600, minute=self._time % 60)
 
     async def activate(self) -> None:
-        if cast(bool, self.disabled):
+        if self.disabled:
             return
 
         from core.start import data
 
         todo_str = "\n".join(
-            f"{i+1}) {cast(str, y.desc)}"
-            for i, y in enumerate(
-                x for x in data.user_tasks if cast(int, x.user_id) == self.user
-            )
+            f"{i+1}) {y.desc}"
+            for i, y in enumerate(x for x in data.user_tasks if x.user_id == self.user)
         )
 
         if todo_str:
-            await client.get_partial_messageable(cast(int, self.channel)).send(
+            await client.get_partial_messageable(self.channel).send(
                 f"Good morning, <@{self.user}>! Here is your current todo list:\n```\n"
                 + todo_str
                 + "\n```"
@@ -439,7 +427,7 @@ class Wakeup(RepeatableTask, Base):
 
     def get_next_activation(self, curr_time: dt) -> dt:
         res = replace_down(curr_time, "hour", self.time)
-        if res + self._activation_threshold < curr_time:
+        if res < curr_time:
             res += timedelta(days=1)
         return res
 
@@ -447,9 +435,7 @@ class Wakeup(RepeatableTask, Base):
         next_activation = self.get_next_activation(curr_time)
         prev_activation = next_activation - timedelta(days=1)
         return (
-            timedelta()
-            <= time_dist(prev_activation.time(), curr_time.time())
-            <= self._activation_threshold
+            timedelta() <= (curr_time - prev_activation) <= self._activation_threshold
         )
 
     def __repr__(self) -> str:

@@ -2,18 +2,25 @@ from __future__ import annotations
 
 from abc import abstractmethod
 from datetime import datetime as dt, timedelta, time as Time
+from decimal import Decimal
 from math import ceil
 from typing import Any, Dict, cast
 
 import pytz
 from core.timer import now
 from core.utils.exceptions import MissingTimezoneException
-from core.utils.time import logical_dt_repr, logical_time_repr, replace_down
+from core.utils.time import (
+    _date_suffix,
+    logical_dt_repr,
+    logical_time_repr,
+    replace_down,
+)
 from core.utils.constants import client, todo_emoji
 from sqlalchemy import Boolean, Column, Float, Integer, String
 from sqlalchemy.orm import reconstructor  # type: ignore
 from core.data.base import Base
 from sqlalchemy.orm.attributes import InstrumentedAttribute
+from dateutil.relativedelta import relativedelta as rd
 
 """
 NOTE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -85,9 +92,10 @@ class Task(Immutable):
     def get_next_activation(self, curr_time: dt) -> dt:
         ...
 
-    @abstractmethod
     def soon_past_activation(self, curr_time: dt) -> bool:
-        ...
+        return self.get_next_activation(
+            curr_time - self._activation_threshold
+        ) != self.get_next_activation(curr_time)
 
 
 class RepeatableTask(Task):
@@ -140,9 +148,9 @@ class PeriodicTask(RepeatableTask):
     ) -> None:
         super().__init__(**kwargs)
         self.periodicity = periodicity
-        self._periodicity = periodicity.total_seconds()
+        self._periodicity = cast(Decimal, periodicity.total_seconds())
         self.first_activation = first_activation
-        self._first_activation = first_activation.timestamp()
+        self._first_activation = cast(Decimal, first_activation.timestamp())
 
     @reconstructor  # type: ignore
     def init_on_load(self) -> None:
@@ -159,12 +167,47 @@ class PeriodicTask(RepeatableTask):
         )
         return self.first_activation + repeats * self.periodicity
 
-    def soon_past_activation(self, curr_time: dt) -> bool:
-        next_activation = self.get_next_activation(curr_time)
-        prev_activation = next_activation - self.periodicity
-        return (
-            timedelta() <= (curr_time - prev_activation) <= self._activation_threshold
+
+class MonthlyTask(RepeatableTask):
+    """
+    Inherit this class to add property of being triggered every month.
+    Yeah, it would be better to use relative delta, but idrk how.
+    """
+
+    __abstract__ = True
+
+    day = Column(Integer)
+    _time = Column(Float(40))
+
+    def __init__(
+        self,
+        day_of_month: int,
+        time_of_day: Time,
+        **kwargs: Dict[str, Any],
+    ) -> None:
+        super().__init__(**kwargs)
+        self.day = day_of_month
+        self.time = time_of_day
+        self._time = cast(
+            Decimal,
+            timedelta(
+                hours=time_of_day.hour,
+                minutes=time_of_day.minute,
+                seconds=time_of_day.second,
+            ).total_seconds(),
         )
+
+    @reconstructor  # type: ignore
+    def init_on_load(self) -> None:
+        super().init_on_load()
+
+    def get_next_activation(self, curr_time: dt) -> dt:
+        res = curr_time + rd(day=self.day)
+        res = replace_down(res, "hour", self.time)
+        if res < curr_time:
+            res += rd(months=1)
+            res += rd(day=self.day)
+        return res
 
 
 class SingleTask(Task):
@@ -207,9 +250,7 @@ class Alert(Task):
     user = Column(Integer)
     channel_id = Column(Integer)
     descriptor_tag = Column(String)
-    _reminder_str: str = (
-        "Hey <@{user}>, this is a reminder to {msg}."
-    )
+    _reminder_str: str = "Hey <@{user}>, this is a reminder to {msg}."
 
     def __init__(
         self,
@@ -307,6 +348,44 @@ class PeriodicAlert(Alert, PeriodicTask, Base):  # type: ignore
             return f"your weekly reminder at {time_str} to {self.msg}"
 
         raise NotImplementedError(f"The periodicity {self.periodicity} is unknown.")
+
+
+class MonthlyAlert(Alert, MonthlyTask, Base):  # type: ignore
+    """Sends an alert every month"""
+
+    __tablename__ = "monthly_alert"
+
+    def __init__(
+        self,
+        msg: str,
+        user: int,
+        channel_id: int,
+        day_of_month: int,
+        time_of_day: Time,
+        descriptor_tag: str = "",
+    ) -> None:
+        super(MonthlyAlert, self).__init__(
+            msg=msg,
+            user=user,
+            channel_id=channel_id,
+            descriptor_tag=descriptor_tag,
+            day_of_month=day_of_month,  # type: ignore
+            time_of_day=time_of_day,  # type: ignore
+        )
+
+    @reconstructor  # type: ignore
+    def init_on_load(self) -> None:
+        super().init_on_load()
+
+    @property
+    def full_desc(self) -> str:
+        from core.start import data
+
+        time_str = logical_time_repr(self.time, data.timezones[self.user].tz)
+        return (
+            f"your reminder on the {self.day}{_date_suffix(self.day)}"
+            f" of each month at {time_str} to {self.msg}"
+        )
 
 
 class SingleAlert(Alert, SingleTask, Base):  # type: ignore
@@ -430,13 +509,6 @@ class Wakeup(RepeatableTask, Base):  # type: ignore
         if res < curr_time:
             res += timedelta(days=1)
         return res
-
-    def soon_past_activation(self, curr_time: dt) -> bool:
-        next_activation = self.get_next_activation(curr_time)
-        prev_activation = next_activation - timedelta(days=1)
-        return (
-            timedelta() <= (curr_time - prev_activation) <= self._activation_threshold
-        )
 
     def __repr__(self) -> str:
         return (

@@ -260,7 +260,7 @@ async def get_messages_at_time(
 
     initial_msgs = set(messages)
     now.suppose_it_is(moment)
-    await asyncio.sleep(0.055)
+    await asyncio.sleep(0.011)
 
     responses = [x for x in messages if x not in initial_msgs]
 

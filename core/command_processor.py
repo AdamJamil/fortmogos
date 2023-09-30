@@ -9,6 +9,7 @@ from core.utils.parse import (
     DurationExpr,
     KleeneStar,
     Literal,
+    MonthlyTimeExpr,
     Num,
     TimeExpr,
     TimeZoneExpr,
@@ -25,7 +26,7 @@ from command.help import help_reminder
 from command.manage_reminder import delete_reminder, show_reminders
 from command.manage_task import add_task, delete_task, show_tasks
 from command.manage_timezone import manage_timezone
-from command.set_reminder import set_daily, set_in, set_weekly
+from command.set_reminder import set_daily, set_in, set_monthly, set_weekly
 
 
 SHOW = ("list", "show", "see", "view")
@@ -52,12 +53,13 @@ class CommandProcessor:
             Literal("wakeup") >> TimeExpr() >> change_wakeup_time,
             Literal("daily") >> TimeExpr() >> KleeneStar() >> set_daily,
             Literal("weekly") >> WeeklyTimeExpr() >> KleeneStar() >> set_weekly,
+            Literal("monthly") >> MonthlyTimeExpr() >> KleeneStar() >> set_monthly,
             Literal("in") >> DurationExpr() >> KleeneStar() >> set_in,
         )
 
     async def parse_and_respond(self, ctx: Context) -> None:
         from core.start import data
-        
+
         parsed_command = self.arg_parser.parse_message(ctx.content())
 
         if parsed_command.needs_tz and not await ctx.is_timezone_set():

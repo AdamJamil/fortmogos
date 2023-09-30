@@ -12,7 +12,7 @@ from disc.tests.utils import (
     user_says,
 )
 from core.start import data
-from core.data.writable import PeriodicAlert, SingleAlert
+from core.data.writable import MonthlyAlert, PeriodicAlert, SingleAlert
 from core.timer import now
 
 
@@ -98,6 +98,92 @@ class TestSetReminder(Test):
                 )
             else:
                 await get_messages_at_time(curr, expected_messages=0)
+
+    async def test_set_monthly(self) -> None:
+        response = await user_says("monthly 8am 7th trash", expected_responses=1)
+        self.assert_equal(
+            response.content,
+            (
+                f"<@{testmogus_id}>'s monthly reminder on the 7th of each month at "
+                '8AM to "trash" has been set.'
+            ),
+        )
+
+        self.assert_true(test_message_deleted("monthly 8am 7th trash"))
+
+        self.assert_len(data.tasks, 1)
+        self.assert_is_instance(data.tasks[0], MonthlyAlert)
+        self.assert_has_attrs(
+            data.tasks[0],
+            {
+                "msg": "trash",
+                "user": testmogus_id,
+                "day": 7,
+                "time": Time(hour=12),
+            },
+        )
+        now.suppose_it_is(now().replace(hour=12))
+        start = now()
+        curr = start
+
+        i = 0
+        while i <= 200:
+            curr = start + timedelta(days=i)
+            if int(curr.strftime("%d")) == 7:
+                alert = await get_messages_at_time(curr, expected_messages=1)
+                self.assert_equal(
+                    alert.content,
+                    f"Hey <@{testmogus_id}>, this is a reminder to trash.",
+                )
+                if i > 30:
+                    i += 25
+            else:
+                await get_messages_at_time(curr, expected_messages=0)
+            i += 1
+
+    async def test_set_monthly_end(self) -> None:
+        response = await user_says("monthly 30th 8am trash", expected_responses=1)
+        self.assert_equal(
+            response.content,
+            (
+                f"<@{testmogus_id}>'s monthly reminder on the 30th of each month at "
+                '8AM to "trash" has been set.'
+            ),
+        )
+
+        self.assert_true(test_message_deleted("monthly 30th 8am trash"))
+
+        self.assert_len(data.tasks, 1)
+        self.assert_is_instance(data.tasks[0], MonthlyAlert)
+        self.assert_has_attrs(
+            data.tasks[0],
+            {
+                "msg": "trash",
+                "user": testmogus_id,
+                "day": 30,
+                "time": Time(hour=12),
+            },
+        )
+        now.suppose_it_is(now().replace(hour=12))
+        start = now()
+        curr = start
+
+        i = 0
+        while i <= 70:
+            curr = start + timedelta(days=i)
+            curr_day = int(curr.strftime("%d"))
+            next_day = int((curr + timedelta(days=1)).strftime("%d"))
+            if curr_day == 30 or next_day != curr_day + 1:
+                alert = await get_messages_at_time(curr, expected_messages=1)
+                self.assert_equal(
+                    alert.content,
+                    f"Hey <@{testmogus_id}>, this is a reminder to trash.",
+                )
+                if i > 30:
+                    i += 25
+            else:
+                await get_messages_at_time(curr, expected_messages=0)
+            i += 1
 
     async def test_set_in(self) -> None:
         response = await user_says("in 3d8h5m4s wake up", expected_responses=1)

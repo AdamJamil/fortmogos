@@ -388,7 +388,7 @@ class WeeklyTimeExpr(Expr2[Time, str]):
         x: Deque[str],
         opt: Chain[Time],
     ) -> Tuple[Time] | List[Warn] | None:
-        res = ()
+        res: Tuple[Any, ...] = ()
         warnings: List[Warn] = []
         for expr in opt.exprs:
             curr = expr.match(x)
@@ -439,6 +439,73 @@ class WeeklyTimeExpr(Expr2[Time, str]):
 
     def __repr__(self) -> str:
         return "WeekOffset"
+
+
+class SuffixedNumExpr(Expr1[int]):
+    def match(self, x: Deque[str]) -> Tuple[int] | List[Warn] | None:
+        """
+        Matches either a normal number or something like "3rd"
+        """
+        if x[0].isnumeric():
+            return (int(x.popleft()),)
+        if (
+            len(x[0]) < 3
+            or not x[0][:-2].isnumeric()
+            or x[0][-2:] not in ("st", "nd", "rd", "th")
+        ):
+            return None
+        return (int(x.popleft()[:-2]),)
+
+    def __repr__(self) -> str:
+        return "IndexedNum"
+
+
+class MonthlyTimeExpr(Expr2[Time, int]):
+    def match_option(
+        self,
+        x: Deque[str],
+        opt: Chain[int, Time] | Chain[Time, int],
+    ) -> Tuple[Time, int] | Tuple[int, Time] | List[Warn] | None:
+        res: Tuple[Any, ...] = ()
+        warnings: List[Warn] = []
+        for expr in opt.exprs:
+            curr = expr.match(x)
+            if curr is None:
+                return None
+            elif isinstance(curr, List):
+                warnings += curr
+            else:
+                res += curr
+        return warnings or cast(Tuple[Time, int] | Tuple[int, Time], res)
+
+    def match(self, x: Deque[str]) -> Tuple[Time, int] | List[Warn] | None:
+        """
+        Gets a day and time of the month from an expression.
+        Valid examples: 8AM 2nd, 3rd 9:21PM.
+        """
+        if len(x) == 1:
+            return [Warn("Ran out of tokens while parsing.")]
+        res, dq_pop = min(
+            (
+                (
+                    self.match_option(xc := deque(x), option),
+                    len(x) - len(xc),
+                )
+                for option in (
+                    SuffixedNumExpr() >> TimeExpr(),
+                    TimeExpr() >> SuffixedNumExpr(),
+                )
+            ),
+            key=lambda x: res_key(x[0]),
+        )
+        for _ in range(dq_pop):
+            x.popleft()
+        if isinstance(res, tuple) and isinstance(res[0], int):
+            res = cast(Tuple[Time, int], (res[1], res[0]))
+        return cast(Tuple[Time, int] | List[Warn] | None, res)
+
+    def __repr__(self) -> str:
+        return "MonthlyTime"
 
 
 class TimeZoneExpr(Expr1[BaseTzInfo]):

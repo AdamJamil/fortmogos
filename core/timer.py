@@ -60,6 +60,6 @@ class Timer:
             await self.data.wakeup.async_lambda(maybe_activate)
 
             await asyncio.sleep(
-                min(0.05, max(0, 0.05 - (now() - self.timer).total_seconds()))
+                min(0.01, max(0, 0.01 - (now() - self.timer).total_seconds()))
             )
             self.timer = now()

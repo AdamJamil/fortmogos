@@ -199,6 +199,9 @@ class MonthlyTask(RepeatableTask):
     @reconstructor  # type: ignore
     def init_on_load(self) -> None:
         super().init_on_load()
+        hours, rem = divmod(self._time, 3600)
+        minutes, seconds = divmod(rem, 60)
+        self.time = Time(int(hours), int(minutes), int(seconds))
 
     def get_next_activation(self, curr_time: dt) -> dt:
         res = curr_time + rd(day=self.day)

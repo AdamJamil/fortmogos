@@ -220,3 +220,15 @@ class TestSetReminder(Test):
         self.assert_starts_with(
             alert.content, f"Hey <@{testmogus_id}>, this is a reminder to wake up."
         )
+
+    async def test_set_in_day_localization(self) -> None:
+        """
+        tl;dr the day in `logical_dt_repr` used to come from UTC time, not yours, which
+        leads to nonsensical responses.
+        """
+        response = await user_says("in 1h suspicious", expected_responses=1)
+
+        self.assert_equal(
+            response.content,
+            f'<@{testmogus_id}>\'s reminder at 9PM to "suspicious" has been set.',
+        )

@@ -140,11 +140,12 @@ def logical_dt_repr(stamp: Union[dt, Time], timezone: BaseTzInfo) -> str:
     """
     stamp must be a UTC timestamp
     """
-    curr = pytz.utc.localize(now())
+    curr = now().replace(tzinfo=pytz.utc)
     if isinstance(stamp, Time):
         stamp = curr.replace(hour=stamp.hour, minute=stamp.minute, second=stamp.second)
-    if stamp.tzinfo is None:
-        stamp = pytz.utc.localize(stamp)
+    if stamp.tzinfo is None:  # either explicitly or implicity UTC - unify
+        stamp = stamp.replace(tzinfo=pytz.utc).astimezone(timezone)
+    curr = curr.astimezone(timezone)  # now everything is local TZ
 
     date_str = ""
     if stamp.year != curr.year:
@@ -156,7 +157,7 @@ def logical_dt_repr(stamp: Union[dt, Time], timezone: BaseTzInfo) -> str:
             f"on the %#d{_date_suffix(int(stamp.strftime('%d')))}"
         )
     date_str += " " * bool(date_str)
-    return date_str + "at " + logical_time_repr(stamp, timezone)
+    return date_str + "at " + logical_time_repr(stamp.astimezone(pytz.utc), timezone)
 
 
 def relative_day_str(stamp: Union[dt, Time], timezone: BaseTzInfo) -> str:

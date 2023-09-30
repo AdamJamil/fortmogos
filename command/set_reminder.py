@@ -4,7 +4,13 @@ from core.context import Context
 from core.data.writable import MonthlyAlert, PeriodicAlert, SingleAlert
 from core.data.handler import DataHandler
 from core.timer import now
-from core.utils.time import _date_suffix, logical_dt_repr, replace_down, tz_convert_time
+from core.utils.time import (
+    _date_suffix,
+    logical_dt_repr,
+    logical_time_repr,
+    replace_down,
+    tz_convert_time,
+)
 
 
 async def set_daily(
@@ -29,8 +35,8 @@ async def set_daily(
         )
     )
     await ctx.reply(
-        f"<@{ctx.user_id}>'s daily reminder "
-        f"{logical_dt_repr(reminder_time, tz)}"
+        f"<@{ctx.user_id}>'s daily reminder at "
+        f"{logical_time_repr(reminder_time, tz)}"
         f' to "{reminder_str}" has been set.'
     )
     await ctx.delete()
@@ -60,8 +66,8 @@ async def set_weekly(
     )
     capitalized_day = day_of_week[0].upper() + day_of_week[1:]
     await ctx.reply(
-        f"<@{ctx.user_id}>'s weekly reminder "
-        f"{logical_dt_repr(reminder_time, tz)} on {capitalized_day}s"
+        f"<@{ctx.user_id}>'s weekly reminder at "
+        f"{logical_time_repr(reminder_time, tz)} on {capitalized_day}s"
         f' to "{reminder_str}" has been set.'
     )
     await ctx.delete()
@@ -89,7 +95,7 @@ async def set_monthly(
     await ctx.reply(
         f"<@{ctx.user_id}>'s monthly reminder "
         f"on the {day_of_month}{_date_suffix(day_of_month)}"
-        f" of each month {logical_dt_repr(reminder_time, tz)}"
+        f" of each month at {logical_time_repr(reminder_time, tz)}"
         f' to "{reminder_str}" has been set.'
     )
     await ctx.delete()

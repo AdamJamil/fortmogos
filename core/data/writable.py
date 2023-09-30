@@ -8,7 +8,6 @@ from typing import Any, Dict, cast
 
 import pytz
 from core.timer import now
-from core.utils.exceptions import MissingTimezoneException
 from core.utils.time import (
     _date_suffix,
     logical_dt_repr,
@@ -278,18 +277,10 @@ class Alert(Task):
         """
         from core.start import data
 
-        try:
-            msg = self._reminder_str.format(
-                user=self.user,
-                msg=self.msg,
-                x=logical_dt_repr(now(), data.timezones[self.user].tz),
-            )
-        except MissingTimezoneException:
-            msg = self._reminder_str.format(
-                user=self.user,
-                msg=self.msg,
-                x="some unknown time, since we don't have your timezone.",
-            )
+        msg = self._reminder_str.format(
+            user=self.user,
+            msg=self.msg,
+        )
 
         try:
             res = await client.get_partial_messageable(self.channel_id).send(msg)

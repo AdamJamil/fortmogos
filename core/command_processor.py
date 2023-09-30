@@ -55,6 +55,7 @@ class CommandProcessor:
             Literal("weekly") >> WeeklyTimeExpr() >> KleeneStar() >> set_weekly,
             Literal("monthly") >> MonthlyTimeExpr() >> KleeneStar() >> set_monthly,
             Literal("in") >> DurationExpr() >> KleeneStar() >> set_in,
+            # Literal("at") >> DateTimeExpr() >> KleeneStar() >> set_at,
         )
 
     async def parse_and_respond(self, ctx: Context) -> None:

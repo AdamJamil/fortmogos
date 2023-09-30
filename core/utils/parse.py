@@ -232,45 +232,17 @@ class Warn(str):
     ...
 
 
-class Literal(Expr0):
-    def __init__(self, *_val: str | Sequence[str]) -> None:
-        super().__init__()
-        val: List[List[str]] = [
-            [chunk.lower()] if isinstance(chunk, str) else [x.lower() for x in chunk]
-            for chunk in _val
-        ]
-        self.options: List[str] = [" ".join(choice) for choice in product(*val)]
+class ExprGroup:
+    expr_options: List[List[Expr]]  # group matches if any list of exprs matches
 
-    def match_word(
-        self, x: Deque[str], actual: str, expect: str
-    ) -> Tuple[()] | Warn | None:
-        """Matches a single word from expected/actual strings."""
-        if edit_distance_one(actual, expect):
-            x.popleft()
-            return Warn(f"Did you mean `{expect}` instead of `{actual}`?")
-        return () if actual == expect and x.popleft() else None
-
-    def match_option(self, option: str, x: Deque[str]) -> Tuple[()] | List[Warn] | None:
-        """Matches an entire phrase."""
-        tokens = option.split(" ")
-        initial_tokens = len(x)
-        warnings: List[Warn] = []
-        for actual, expect in zip(tuple(x), tokens):
-            actual = actual.lower()
-            if isinstance(match := self.match_word(x, actual, expect), Warn):
-                warnings.append(match)
-            elif match is None:
-                return None
-        if initial_tokens < len(tokens):
-            return None if warnings else [Warn("Ran out of tokens while parsing.")]
-        return warnings or ()
-
-    def match(self, x: Deque[str]) -> Tuple[()] | List[Warn] | None:
-        """Tries all options"""
+    def match(self, x: Deque[str]) -> Tuple[Any, ...] | List[Warn] | None:
+        """
+        Try all options out, pick best.
+        """
         best, dq_pop = min(
             (
                 (self.match_option(option, xc := deque(x)), len(x) - len(xc))
-                for option in self.options
+                for option in self.expr_options
             ),
             key=lambda x: res_key(x[0]),
         )
@@ -278,8 +250,59 @@ class Literal(Expr0):
             x.popleft()
         return best
 
+    def match_option(
+        self, option: List[Expr], x: Deque[str]
+    ) -> Tuple[Any, ...] | List[Warn] | None:
+        """Try matching on an option of exprs"""
+        res: Tuple[Any, ...] = ()
+        warnings: List[Warn] = []
+        for expr in option:
+            curr = expr.match(x)
+            if curr is None:
+                return None
+            elif isinstance(curr, List):
+                warnings += curr
+            else:
+                res += curr
+        return warnings or res
+
+
+class _SingleLiteral(Expr0):
+    def __init__(self, word: str) -> None:
+        super().__init__()
+        self.word = word
+
+    def match(self, x: Deque[str]) -> Tuple[()] | List[Warn] | None:
+        """Matches a single word from expected/actual strings."""
+        if not len(x):
+            return [Warn("Ran out of tokens while parsing.")]
+        if edit_distance_one(actual := x[0].lower(), self.word):
+            x.popleft()
+            return [Warn(f"Did you mean `{self.word}` instead of `{actual}`?")]
+        return () if actual == self.word and x.popleft() else None
+
     def __repr__(self) -> str:
-        return f"Literal({self.options})"
+        return f"_SingleLiteral({self.word})"
+
+
+class Literal(Expr0, ExprGroup):
+    def __init__(self, *_val: str | Sequence[str]) -> None:
+        super().__init__()
+        val: List[List[str]] = [
+            [chunk.lower()] if isinstance(chunk, str) else [x.lower() for x in chunk]
+            for chunk in _val
+        ]
+        strd_options = [list(choice) for choice in product(*val)]
+        self.expr_options = [
+            [_SingleLiteral(word) for phrase in option for word in phrase.split(" ")]
+            for option in strd_options
+        ]
+
+    def match(self, x: Deque[str]) -> Tuple[()] | List[Warn] | None:
+        return cast(Tuple[()] | List[Warn] | None, ExprGroup.match(self, x))
+
+    def __repr__(self) -> str:
+        return f"Literal({self.expr_options})"
 
 
 class Num(Expr1[int]):
@@ -417,7 +440,10 @@ class WeeklyTimeExpr(Expr2[Time, str]):
             "sunday",
         }
         options = chain.from_iterable(
-            ((Literal(day) >> TimeExpr(), day), (TimeExpr() >> Literal(day), day))
+            (
+                (_SingleLiteral(day) >> TimeExpr(), day),
+                (TimeExpr() >> _SingleLiteral(day), day),
+            )
             for day in days
         )
         best_time, best_day, dq_pop = min(

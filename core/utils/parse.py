@@ -31,6 +31,7 @@ from core.utils.time import parse_duration, replace_down
 
 
 ARGS = TypeVarTuple("ARGS")
+T = TypeVar("T")
 T1 = TypeVar("T1")
 T2 = TypeVar("T2")
 RES = Coroutine[Any, Any, None]
@@ -232,23 +233,34 @@ class Warn(str):
     ...
 
 
-class ExprGroup:
-    expr_options: List[List[Expr]]  # group matches if any list of exprs matches
+class ExprGroup(Generic[T]):
+    """
+    The group matches if any list of exprs from expr_options matches.
+    """
 
-    def match(self, x: Deque[str]) -> Tuple[Any, ...] | List[Warn] | None:
+    def __init__(
+        self, expr_options: List[List[Expr]], metadata: Optional[List[T]] = None
+    ) -> None:
+        self.expr_options = expr_options
+        self.metadata = metadata
+
+    def match(self, x: Deque[str]) -> Tuple[Tuple[Any, ...] | List[Warn] | None, T]:
         """
         Try all options out, pick best.
         """
-        best, dq_pop = min(
+        best, dq_pop, best_metadata = min(
             (
-                (self.match_option(option, xc := deque(x)), len(x) - len(xc))
-                for option in self.expr_options
+                (self.match_option(option, xc := deque(x)), len(x) - len(xc), metadata)
+                for option, metadata in zip(
+                    self.expr_options,
+                    self.metadata or [cast(T, None)] * len(self.expr_options),
+                )
             ),
             key=lambda x: res_key(x[0]),
         )
         for _ in range(dq_pop):
             x.popleft()
-        return best
+        return best, best_metadata
 
     def match_option(
         self, option: List[Expr], x: Deque[str]
@@ -285,7 +297,7 @@ class _SingleLiteral(Expr0):
         return f"_SingleLiteral({self.word})"
 
 
-class Literal(Expr0, ExprGroup):
+class Literal(Expr0):
     def __init__(self, *_val: str | Sequence[str]) -> None:
         super().__init__()
         val: List[List[str]] = [
@@ -293,16 +305,22 @@ class Literal(Expr0, ExprGroup):
             for chunk in _val
         ]
         strd_options = [list(choice) for choice in product(*val)]
-        self.expr_options = [
-            [_SingleLiteral(word) for phrase in option for word in phrase.split(" ")]
-            for option in strd_options
-        ]
+        self.expr_group = ExprGroup[None](
+            expr_options=[
+                [
+                    _SingleLiteral(word)
+                    for phrase in option
+                    for word in phrase.split(" ")
+                ]
+                for option in strd_options
+            ]
+        )
 
     def match(self, x: Deque[str]) -> Tuple[()] | List[Warn] | None:
-        return cast(Tuple[()] | List[Warn] | None, ExprGroup.match(self, x))
+        return cast(Tuple[()] | List[Warn] | None, self.expr_group.match(x)[0])
 
     def __repr__(self) -> str:
-        return f"Literal({self.expr_options})"
+        return f"Literal({self.expr_group.expr_options})"
 
 
 class Num(Expr1[int]):
@@ -406,30 +424,12 @@ class TimeExpr(Expr1[Time]):
 
 
 class WeeklyTimeExpr(Expr2[Time, str]):
-    def match_option(
-        self,
-        x: Deque[str],
-        opt: Chain[Time],
-    ) -> Tuple[Time] | List[Warn] | None:
-        res: Tuple[Any, ...] = ()
-        warnings: List[Warn] = []
-        for expr in opt.exprs:
-            curr = expr.match(x)
-            if curr is None:
-                return None
-            elif isinstance(curr, List):
-                warnings += curr
-            else:
-                res += curr
-        return warnings or cast(Tuple[Time], res)
+    """
+    Gets a day and time of the week from an expression.
+    Valid examples: Monday 2PM, 3:04AM saturday.
+    """
 
-    def match(self, x: Deque[str]) -> Tuple[Time, str] | List[Warn] | None:
-        """
-        Gets a day and time of the week from an expression.
-        Valid examples: Monday 2PM, 3:04AM saturday.
-        """
-        if len(x) == 1:
-            return [Warn("Ran out of tokens while parsing.")]
+    def __init__(self) -> None:
         days = {
             "monday",
             "tuesday",
@@ -439,29 +439,26 @@ class WeeklyTimeExpr(Expr2[Time, str]):
             "saturday",
             "sunday",
         }
-        options = chain.from_iterable(
-            (
-                (_SingleLiteral(day) >> TimeExpr(), day),
-                (TimeExpr() >> _SingleLiteral(day), day),
-            )
-            for day in days
-        )
-        best_time, best_day, dq_pop = min(
-            (
-                (
-                    self.match_option(xc := deque(x), option[0]),
-                    option[1],
-                    len(x) - len(xc),
+        self.expr_group = ExprGroup[str](
+            list(
+                chain.from_iterable(
+                    (
+                        [_SingleLiteral(day), TimeExpr()],
+                        [TimeExpr(), _SingleLiteral(day)],
+                    )
+                    for day in days
                 )
-                for option in options
             ),
-            key=lambda x: res_key(x[0]),
+            [day for day in days for _ in range(2)],
         )
-        for _ in range(dq_pop):
-            x.popleft()
-        if isinstance(best_time, tuple):
-            return best_time[0], best_day
-        return best_time
+
+    def match(self, x: Deque[str]) -> Tuple[Time, str] | List[Warn] | None:
+        if len(x) == 1:
+            return [Warn("Ran out of tokens while parsing.")]
+        res, day = self.expr_group.match(x)
+        if isinstance(res, tuple):
+            return res[0], day
+        return res
 
     def __repr__(self) -> str:
         return "WeekOffset"
@@ -487,22 +484,13 @@ class SuffixedNumExpr(Expr1[int]):
 
 
 class MonthlyTimeExpr(Expr2[Time, int]):
-    def match_option(
-        self,
-        x: Deque[str],
-        opt: Chain[int, Time] | Chain[Time, int],
-    ) -> Tuple[Time, int] | Tuple[int, Time] | List[Warn] | None:
-        res: Tuple[Any, ...] = ()
-        warnings: List[Warn] = []
-        for expr in opt.exprs:
-            curr = expr.match(x)
-            if curr is None:
-                return None
-            elif isinstance(curr, List):
-                warnings += curr
-            else:
-                res += curr
-        return warnings or cast(Tuple[Time, int] | Tuple[int, Time], res)
+    def __init__(self) -> None:
+        self.expr_group = ExprGroup[None](
+            [
+                [SuffixedNumExpr(), TimeExpr()],
+                [TimeExpr(), SuffixedNumExpr()],
+            ],
+        )
 
     def match(self, x: Deque[str]) -> Tuple[Time, int] | List[Warn] | None:
         """
@@ -511,23 +499,9 @@ class MonthlyTimeExpr(Expr2[Time, int]):
         """
         if len(x) == 1:
             return [Warn("Ran out of tokens while parsing.")]
-        res, dq_pop = min(
-            (
-                (
-                    self.match_option(xc := deque(x), option),
-                    len(x) - len(xc),
-                )
-                for option in (
-                    SuffixedNumExpr() >> TimeExpr(),
-                    TimeExpr() >> SuffixedNumExpr(),
-                )
-            ),
-            key=lambda x: res_key(x[0]),
-        )
-        for _ in range(dq_pop):
-            x.popleft()
+        res, _ = self.expr_group.match(x)
         if isinstance(res, tuple) and isinstance(res[0], int):
-            res = cast(Tuple[Time, int], (res[1], res[0]))
+            return cast(Tuple[Time, int], (res[1], res[0]))
         return cast(Tuple[Time, int] | List[Warn] | None, res)
 
     def __repr__(self) -> str:

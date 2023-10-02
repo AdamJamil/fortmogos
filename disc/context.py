@@ -1,9 +1,8 @@
 from abc import ABC
-from typing import Any, List, Union
+from typing import Any, Union
 
 from discord import Member, Message, Reaction, User
 from core.context import Context
-from core.utils.parse import Warn
 from core.utils.constants import warning_emoji
 
 
@@ -28,7 +27,7 @@ class DiscordContext(Context, ABC):
     async def react(self, emoji: str) -> None:
         await self.message.add_reaction(emoji)
 
-    async def warn_message(self, warnings: List[Warn]) -> None:
+    async def warn_message(self) -> None:
         await self.react(warning_emoji)
 
     @property

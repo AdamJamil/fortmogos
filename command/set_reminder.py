@@ -1,5 +1,7 @@
 from datetime import datetime as dt, time as Time, timedelta
+from dateutil.relativedelta import relativedelta
 from pytz import utc
+import pytz
 from core.context import Context
 from core.data.writable import MonthlyAlert, PeriodicAlert, SingleAlert
 from core.data.handler import DataHandler
@@ -118,6 +120,46 @@ async def set_in(
     await ctx.reply(
         f"<@{ctx.user_id}>'s reminder "
         f"{logical_dt_repr(reminder_time, data.timezones[ctx.user_id].tz)}"
+        f' to "{reminder_str}" has been set.'
+    )
+    await ctx.delete()
+
+
+async def set_at(
+    ctx: Context,
+    data: DataHandler,
+    reminder_time: Time,
+    reminder_day: relativedelta,
+    adjustment: relativedelta | None,
+    reminder_str: str,
+) -> None:
+    reminder_dt = (
+        now().replace(tzinfo=pytz.utc).astimezone(data.timezones[ctx.user_id].tz)
+    )
+    reminder_dt = replace_down(reminder_dt, "hour", reminder_time)
+    reminder_dt += reminder_day
+    if reminder_dt.astimezone(pytz.utc) < now().replace(tzinfo=pytz.utc):
+        if adjustment is None:
+            await ctx.warn_message()
+            return
+        reminder_dt += adjustment
+    reminder_dt = reminder_dt.astimezone(pytz.utc).replace(tzinfo=None)
+
+    reminder_time = tz_convert_time(
+        reminder_time, data.timezones[ctx.user_id].tz, pytz.utc
+    )
+
+    data.tasks.append(
+        SingleAlert(
+            reminder_str,
+            ctx.user_id,
+            ctx.channel_id,
+            reminder_dt,
+        )
+    )
+    await ctx.reply(
+        f"<@{ctx.user_id}>'s reminder at "
+        f"{logical_time_repr(reminder_time, data.timezones[ctx.user_id].tz)}"
         f' to "{reminder_str}" has been set.'
     )
     await ctx.delete()

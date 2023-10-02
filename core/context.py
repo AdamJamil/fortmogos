@@ -1,10 +1,6 @@
 from __future__ import annotations
 
 from abc import ABC
-from typing import List, TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from core.utils.parse import Warn
 
 
 class Context(ABC):
@@ -26,7 +22,7 @@ class Context(ABC):
     async def react(self, emoji: str) -> None:
         ...
 
-    async def warn_message(self, warnings: List[Warn]) -> None:
+    async def warn_message(self) -> None:
         ...
 
     @property

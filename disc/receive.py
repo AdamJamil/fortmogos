@@ -2,13 +2,10 @@ from __future__ import annotations
 
 from random import choice, randint
 import traceback
-from typing import TYPE_CHECKING, Any, List, Union, cast
+from typing import TYPE_CHECKING, Any, Union
 from discord import Member, Reaction, User
 from core.command_processor import CommandProcessor
 
-from core.utils.parse import (
-    Warn,
-)
 from core.utils.color import red
 from core.utils.constants import warning_emoji
 from core.utils.exceptions import MissingTimezoneException
@@ -60,7 +57,11 @@ async def on_reaction_add(reaction: Reaction, user: Union[Member, User]):
         await manage_reaction(reaction, user)
     elif user.id == reaction.message.author.id and str(reaction.emoji) == warning_emoji:
         async for user in reaction.users():
-            if user.id in (1061719682773688391, 1074389982095089664):
+            if user.id in (
+                1061719682773688391,
+                1074389982095089664,
+                1089042918259564564,
+            ):
                 await reaction.message.remove_reaction(warning_emoji, user)
                 parsed_command = command_processor.arg_parser.parse_message(
                     reaction.message.content
@@ -71,9 +72,12 @@ async def on_reaction_add(reaction: Reaction, user: Union[Member, User]):
                 ):
                     await reaction.message.reply(MissingTimezoneException().help)
                 else:
-                    await reaction.message.reply(
-                        cast(List[Warn], parsed_command.res)[0],
-                    )
+                    if isinstance(parsed_command.res, list):
+                        await reaction.message.reply(
+                            parsed_command.res[0],
+                        )
+                    else:
+                        await reaction.message.reply("That time is long past.")
                 break
 
     if user.id not in data.wakeup and any(

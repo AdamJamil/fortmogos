@@ -1,6 +1,6 @@
 from __future__ import annotations
 import asyncio
-from typing import List, Literal, Tuple, Union, overload
+from typing import Generic, List, Literal, Tuple, TypeVar, Union, overload
 from unittest.mock import MagicMock
 
 from disc.receive import on_message, on_reaction_add
@@ -38,6 +38,8 @@ def reset_data() -> None:
     data.wakeup.clear()
     data.wakeup[testmogus_id] = Wakeup(testmogus_id, Time(hour=10), test_channel_id)
 
+    messages.clear()
+
 
 def mock_put(put_save: MagicMock) -> None:
     put_save.return_value = None
@@ -74,6 +76,7 @@ async def query_message_with_reaction(
     initial_msgs = set(messages)
 
     await message.add_reaction(reaction, user=user_user)
+    await asyncio.sleep(0.01)
 
     responses = [x for x in messages if x not in initial_msgs]
 
@@ -101,6 +104,9 @@ class MockUser:
     def __init__(self, _id: int) -> None:
         self.id = _id
 
+    def __repr__(self) -> str:
+        return f"User({self.id})"
+
 
 bot_user = MockUser(fakemogus_id)
 user_user = MockUser(testmogus_id)
@@ -117,11 +123,32 @@ class MockChannel:
 test_channel = MockChannel(test_channel_id)
 
 
+T = TypeVar("T")
+
+
+class AIterator(Generic[T]):
+    def __init__(self, stuff: List[T]) -> None:
+        self.stuff = stuff
+        self.cnt = 0
+
+    def __aiter__(self):
+        return self
+
+    async def __anext__(self) -> T:
+        if self.cnt < len(self.stuff):
+            self.cnt += 1
+            return self.stuff[self.cnt - 1]
+        raise StopAsyncIteration
+
+
 class MockReaction:
     def __init__(self, emoji: str, user: MockUser, message: MockMessage) -> None:
         self.emoji = emoji
-        self.user = user
+        self._users: List[MockUser] = [user]
         self.message = message
+
+    def users(self) -> AIterator[MockUser]:
+        return AIterator(self._users)
 
 
 class MockMessage:
@@ -140,8 +167,21 @@ class MockMessage:
         messages.remove(self)
 
     async def add_reaction(self, emoji: str, user: MockUser = bot_user) -> None:
-        self.reactions.append(MockReaction(emoji, user, self))
+        for reaction in self.reactions:
+            if reaction.emoji == emoji and user not in reaction._users:
+                reaction._users.append(user)
+                break
+        else:
+            self.reactions.append(MockReaction(emoji, user, self))
         await on_reaction_add(self.reactions[-1], user)  # type: ignore
+
+    async def remove_reaction(self, emoji: str, user: MockUser = bot_user) -> None:
+        for reaction in self.reactions:
+            if reaction.emoji == emoji and user in reaction._users:
+                reaction._users.remove(user)
+                if not reaction._users:
+                    self.reactions.remove(reaction)
+                break
 
     def __repr__(self) -> str:
         res = f'MockMessage(content="{self.content}", author={self.author}'
@@ -201,6 +241,8 @@ async def user_says(
                 + "\n\t".join(response.content for response in responses)
             )
 
+        if expected_responses == 0:
+            return None
         if expected_responses == 1:
             return responses[0]
         if expected_responses == 2:

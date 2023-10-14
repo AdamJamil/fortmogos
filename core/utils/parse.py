@@ -276,7 +276,7 @@ class ExprGroup(Generic[T]):
                     self.metadata or [cast(T, None)] * len(self.expr_options),
                 )
             ),
-            key=lambda x: res_key(x[0]),
+            key=lambda r: (res_key(r[0]), len(xc) - len(x)),
         )
         for _ in range(dq_pop):
             x.popleft()
@@ -733,12 +733,14 @@ class DateExpr(Expr2[relativedelta, relativedelta | None]):
         return cast(List[Warn] | None, res)
 
 
-class DateTimeExpr(Expr3[Time, relativedelta, relativedelta | None]):
+class DateTimeExpr(Expr3[Time, relativedelta, relativedelta]):
     """
     Options:
         1) {time}  # surprise, you don't need a date
         2) {time} (on) {date}  # parens means optional word
         3) {date} (on) {time}  # don't care if user has shitty grammar
+        4) {time} (at) {date}  # for the on command
+        5) {date} (at) {time}  # don't care if user has shitty grammar
 
     annoying casework:
         1) time only
@@ -766,7 +768,7 @@ class DateTimeExpr(Expr3[Time, relativedelta, relativedelta | None]):
         1&2) without day, default to just "today", so 1 and 2 are same
             relativedelta()
             grab Time, grab user's now(), replace_down reminder time
-            if invalid time, reminder should NOT be set
+            if invalid time, just add a day
         3) time and "tomorrow"
             relativedelta(days=1)
             grab Time, grab user's now(), replace_down reminder time, add a day
@@ -780,8 +782,8 @@ class DateTimeExpr(Expr3[Time, relativedelta, relativedelta | None]):
         6) time and M/D/Y
             relativedelta(day=day, month=month, year=year)
 
-        OK, but need to add behavior for invalid (fail, or add certain delta)
-            solution: add an optional adjustment
+        OK, but need to add behavior for invalid
+            solution: add an adjustment variable
     """
 
     def __init__(self) -> None:
@@ -797,15 +799,15 @@ class DateTimeExpr(Expr3[Time, relativedelta, relativedelta | None]):
 
     def match(
         self, x: Deque[str]
-    ) -> Tuple[Time, relativedelta, relativedelta | None] | List[Warn] | None:
+    ) -> Tuple[Time, relativedelta, relativedelta] | List[Warn] | None:
         res, _ = self.expr_group.match(x)
         if isinstance(res, tuple):
             if len(res) == 1:  # time only
-                return (res[0], relativedelta(), None)  # fail if invalid time
-            if not isinstance(res[0], Time):  # (rd, rd | None, Time)
+                return (res[0], relativedelta(), relativedelta(days=1))
+            if not isinstance(res[0], Time):  # (rd, rd, Time)
                 res = res[2], res[0], res[1]
         return cast(
-            Tuple[Time, relativedelta, relativedelta | None] | List[Warn] | None, res
+            Tuple[Time, relativedelta, relativedelta] | List[Warn] | None, res
         )
 
 

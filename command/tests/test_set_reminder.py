@@ -1,4 +1,3 @@
-import asyncio
 from typing import cast
 
 import pytz
@@ -9,12 +8,9 @@ from disc.tests.main import Test
 from datetime import timedelta, time as Time
 from disc.tests.utils import (
     get_messages_at_time,
-    query_message_with_reaction,
     test_message_deleted,
     user_says,
-    messages,
 )
-from core.utils.constants import warning_emoji
 from core.start import data
 from core.data.writable import MonthlyAlert, PeriodicAlert, SingleAlert
 from core.timer import now
@@ -237,33 +233,16 @@ class TestSetReminder(Test):
             f'<@{testmogus_id}>\'s reminder at 9PM to "suspicious" has been set.',
         )
 
-    async def test_set_at_1_invalid(self) -> None:
-        await user_says("at 6pm suspicious", expected_responses=0)
-        await asyncio.sleep(0.01)
-        query = messages[0]
-
-        self.assert_len(query.reactions, 1)
-        self.assert_equal(query.reactions[0].emoji, warning_emoji)
-
-        response = await query_message_with_reaction(
-            warning_emoji, query, expected_messages=1
-        )
-        self.assert_equal(
-            response.content,
-            "That time is long past.",
-        )
-
-    async def test_set_at_1_valid(self) -> None:
-        response = await user_says("at 9pm suspicious", expected_responses=1)
+    async def test_set_at_1(self) -> None:
+        response = await user_says("at 12am suspicious", expected_responses=1)
 
         self.assert_equal(
             response.content,
-            f'<@{testmogus_id}>\'s reminder at 9PM to "suspicious" has been set.',
+            f'<@{testmogus_id}>\'s reminder at 12AM to "suspicious" has been set.',
         )
 
-
-    async def test_set_at_2_invalid(self) -> None:
-        response = await user_says("at 9pm suspicious", expected_responses=1)
+    async def test_set_at_2(self) -> None:
+        response = await user_says("at 9pm today suspicious", expected_responses=1)
 
         self.assert_equal(
             response.content,

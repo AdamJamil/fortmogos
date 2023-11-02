@@ -20,7 +20,7 @@ from custom_typing.protocols import Color, Measureable
 def load_test_classes() -> List[type]:
     test_classes: List[type] = []
     for root, _, files in os.walk("."):
-        if root[:3] != ".\\." and "venv" not in root:
+        if root[:3] != "." + os.path.sep + "." and "venv" not in root:
             for file in files:
                 if file.startswith("test_") and file.endswith(".py"):
                     module_name = file[:-3]

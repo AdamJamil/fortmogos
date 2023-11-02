@@ -38,7 +38,7 @@ async def on_message(msg: Message):
     if msg.author.id in (1061719682773688391, 1074389982095089664):
         return
     if msg.author.id == 267807519286624258:
-        if randint(1, 12) == 1:
+        if randint(1, 600) == 1:
             await msg.add_reaction(choice(["🍆", "💦", "🍑", "😳"]))
     try:
         await command_processor.parse_and_respond(DiscordMessageContext(msg))

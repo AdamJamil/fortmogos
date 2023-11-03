@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from random import choice, randint
+from random import randint
 import traceback
 from typing import TYPE_CHECKING, Any, Union
 from discord import Member, Reaction, User

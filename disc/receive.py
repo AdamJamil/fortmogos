@@ -39,7 +39,10 @@ async def on_message(msg: Message):
         return
     if msg.author.id == 267807519286624258:
         if randint(1, 600) == 1:
-            await msg.add_reaction(choice(["🍆", "💦", "🍑", "😳"]))
+            try:
+                await msg.reply("🥺")
+            except Exception:
+                ...
     try:
         await command_processor.parse_and_respond(DiscordMessageContext(msg))
     except MissingTimezoneException:

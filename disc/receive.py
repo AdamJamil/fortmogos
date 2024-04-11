@@ -52,9 +52,9 @@ async def on_message(msg: Message):
             try:
                 await msg.reply(
                     "This person is suspected of distributing illegal imagery online."
-                )   
+                )
             except Exception:
-                ... 
+                ...
     except Exception as e:
         red(f"Wtf:\n{e}\n{traceback.format_exc()}")
         await msg.reply(f"Something broke:\n{e}\n{traceback.format_exc()}")
